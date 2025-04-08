@@ -73,29 +73,54 @@ def draw_brain(conn_list, canvas_width=600, canvas_height=400):
 
     # Node colors by type
     type_colors = {
-        SENSOR: "#6baed6",   # blue
-        NEURON: "#fd8d3c",   # orange
-        ACTION: "#74c476"    # green
+        SENSOR: "#fdd835",  # yellow
+        NEURON: "#64b5f6",  # blue
+        ACTION: "#ef5350"   # red
     }
 
     node_radius = 15
-    for node, (x, y) in positions.items():
-        node_type, node_id = node
-        color = type_colors.get(node_type, "gray")
-        canvas.create_oval(x - node_radius, y - node_radius, x + node_radius, y + node_radius, fill=color, outline="black")
-        canvas.create_text(x, y, text=str(node_id), fill="black")
 
+    # Draw edges first
     for (src, sink) in edges:
         x1, y1 = positions[src]
         x2, y2 = positions[sink]
         weight = weights[(src, sink)]
+
+        # Adjust line endpoints to node edges
+        dx, dy = x2 - x1, y2 - y1
+        dist = math.hypot(dx, dy)
+        if dist == 0:
+            continue
+        ux, uy = dx / dist, dy / dist
+        x1_adj = x1 + ux * node_radius
+        y1_adj = y1 + uy * node_radius
+        x2_adj = x2 - ux * node_radius
+        y2_adj = y2 - uy * node_radius
+
+        # Style based on weight
+        color = "black" if weight >= 0 else "gray"
         thickness = max(1, int(abs(weight) * 3))
-        canvas.create_line(x1, y1, x2, y2, fill="black", width=thickness, arrow=tk.LAST)
-        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-        canvas.create_text(mx, my, text=str(round(weight, 2)), font=("Arial", 8), fill="black")
+        canvas.create_line(x1_adj, y1_adj, x2_adj, y2_adj,
+                         fill=color, width=thickness,
+                         arrow=tk.LAST, arrowshape=(12, 15, 5))
+
+        # Label placement perpendicular to the line
+        label_x = (x1 + x2) / 2 + (-dy) * 0.05
+        label_y = (y1 + y2) / 2 + dx * 0.05
+        canvas.create_text(label_x, label_y, text=f"{weight:.2f}",
+                         font=("Arial", 8), fill="black")
+
+    # Draw nodes on top of edges
+    for node, (x, y) in positions.items():
+        node_type, node_id = node
+        color = type_colors.get(node_type, "gray")
+        canvas.create_oval(x - node_radius, y - node_radius,
+                          x + node_radius, y + node_radius,
+                          fill=color, outline="black")
+        canvas.create_text(x, y, text=str(node_id),
+                         font=("Arial", 10, "bold"))
 
     root.mainloop()
 
 if __name__ == "__main__":
     draw_brain(connections)
-
