@@ -16,25 +16,24 @@ GENOME_INITIAL_LENGTH_MAX = 12
 # Gene structure
 class Gene:
     def __init__(self, sourceType, sourceNum, sinkType, sinkNum, weight):
-        self.sourceType = sourceType  # SENSOR or NEURON (for source)
-        self.sourceNum = sourceNum    # if sensor, index within NUM_SENSES; if neuron, arbitrary id (will be remapped)
-        self.sinkType = sinkType      # for sink: if NEURON then neuron, if ACTION then action
-        self.sinkNum = sinkNum        # either neuron id (to be remapped) or action index
+        self.sourceType = sourceType
+        self.sourceNum = sourceNum
+        self.sinkType = sinkType
+        self.sinkNum = sinkNum
         self.weight = weight
 
     @staticmethod
     def make_random_weight():
-        # random weight in a small range
         return random.uniform(-1.0, 1.0)
 
 def make_random_gene():
-    # For source: choose sensor or neuron with equal chance.
     sourceType = SENSOR if random.getrandbits(1) == 0 else NEURON
-    # For sink: choose neuron (i.e., internal computation) or action with equal chance.
     sinkType = NEURON if random.getrandbits(1) == 0 else ACTION
-    # Use a wide range for temporary gene numbers. Later they are reduced modulo limits.
-    gene = Gene(sourceType, random.randint(0, 0x7fff), sinkType, random.randint(0, 0x7fff), Gene.make_random_weight())
-    # Remap numbers immediately into valid ranges
+    gene = Gene(sourceType,
+                random.randint(0, 0x7fff),
+                sinkType,
+                random.randint(0, 0x7fff),
+                Gene.make_random_weight())
     if gene.sourceType == NEURON:
         gene.sourceNum %= MAX_NEURONS
     else:
@@ -49,46 +48,60 @@ def make_random_genome():
     length = random.randint(GENOME_INITIAL_LENGTH_MIN, GENOME_INITIAL_LENGTH_MAX)
     return [make_random_gene() for _ in range(length)]
 
+# Cull genes that refer to neurons that are never driven
+def cull_unused_neurons(genome):
+    inbound = {}
+    for gene in genome:
+        if gene.sinkType == NEURON:
+            # Count only non-self connections as proper driving input.
+            if gene.sinkNum not in inbound:
+                inbound[gene.sinkNum] = 0
+            if gene.sourceType == SENSOR or (gene.sourceType == NEURON and gene.sourceNum != gene.sinkNum):
+                inbound[gene.sinkNum] += 1
+    # Only keep those neurons that receive at least one non-self input.
+    driven_neurons = {nid for nid, count in inbound.items() if count > 0}
+    culled = []
+    for gene in genome:
+        if gene.sinkType == NEURON and gene.sinkNum not in driven_neurons:
+            continue
+        if gene.sourceType == NEURON and gene.sourceNum not in driven_neurons:
+            continue
+        culled.append(gene)
+    return culled
+
 # The Brain class: create wiring and run the network.
 class Brain:
     def __init__(self, genome):
-        self.genome = genome
-        # We'll split connections into two lists:
-        # one for neuron-targeting genes and one for action-targeting genes.
-        self.neuron_connections = []  # connections with sinkType==NEURON
-        self.action_connections = []  # connections with sinkType==ACTION
-        # Build wiring with remapped neuron indices from genome
+        # Cull unused neurons before wiring.
+        self.genome = cull_unused_neurons(genome)
+        self.neuron_connections = []
+        self.action_connections = []
         self.build_wiring()
 
     def build_wiring(self):
-        # We'll collect all neuron IDs that appear in the genome.
         neuron_ids = set()
+        # Gather neuron ids only from genes that survived culling.
         for gene in self.genome:
             if gene.sourceType == NEURON:
                 neuron_ids.add(gene.sourceNum)
             if gene.sinkType == NEURON:
                 neuron_ids.add(gene.sinkNum)
-        # Remap neuron IDs to a compact range [0, n_neurons)
         remap = {}
         new_id = 0
         for nid in sorted(neuron_ids):
             remap[nid] = new_id
             new_id += 1
         self.num_neurons = new_id
-        # For tracing
         print("Remapped neurons:", remap)
-
-        # Store connections with remapped neuron numbers.
         self.neuron_connections = []
         self.action_connections = []
         for gene in self.genome:
-            # Make a shallow copy so we can remap numbers in the copy.
             g = Gene(gene.sourceType, gene.sourceNum, gene.sinkType, gene.sinkNum, gene.weight)
             if g.sourceType == NEURON:
                 if g.sourceNum in remap:
                     g.sourceNum = remap[g.sourceNum]
                 else:
-                    continue  # skip gene if source not remapped (shouldn't happen)
+                    continue
             if g.sinkType == NEURON:
                 if g.sinkNum in remap:
                     g.sinkNum = remap[g.sinkNum]
@@ -97,31 +110,24 @@ class Brain:
                 self.neuron_connections.append(g)
             else:
                 self.action_connections.append(g)
-        print("Neuron connections:", [(g.sourceType, g.sourceNum, g.sinkType, g.sinkNum, round(g.weight, 2)) for g in self.neuron_connections])
-        print("Action connections:", [(g.sourceType, g.sourceNum, g.sinkType, g.sinkNum, round(g.weight, 2)) for g in self.action_connections])
-
-        # Initialize neuron outputs
+        print("Neuron connections:", [(g.sourceType, g.sourceNum, g.sinkType, g.sinkNum, round(g.weight,3)) for g in self.neuron_connections])
+        print("Action connections:", [(g.sourceType, g.sourceNum, g.sinkType, g.sinkNum, round(g.weight,3)) for g in self.action_connections])
         self.neurons = [0.0] * self.num_neurons
 
     def activate(self, sensor_inputs, iterations=3):
-        # sensor_inputs: list of floats for each sensor (size NUM_SENSES)
         if len(sensor_inputs) != NUM_SENSES:
             raise ValueError("Expected sensor_inputs with length {}".format(NUM_SENSES))
-        # Run recurrent updates for neurons
         for it in range(iterations):
             new_neurons = [0.0] * self.num_neurons
-            # Process all connections that feed into a neuron.
             for conn in self.neuron_connections:
                 if conn.sourceType == SENSOR:
                     source_val = sensor_inputs[conn.sourceNum]
-                else:  # NEURON
+                else:
                     source_val = self.neurons[conn.sourceNum]
                 new_neurons[conn.sinkNum] += conn.weight * source_val
-            # Apply tanh activation
             new_neurons = [math.tanh(x) for x in new_neurons]
             self.neurons = new_neurons
             print("After iteration", it+1, "neuron outputs:", [round(n,3) for n in self.neurons])
-        # Compute action outputs using final neuron activations (one pass)
         actions = [0.0] * NUM_ACTIONS
         for conn in self.action_connections:
             if conn.sourceType == SENSOR:
@@ -142,9 +148,8 @@ if __name__ == '__main__':
               " Source:", g.sourceNum,
               " SinkType:", "NEURON" if g.sinkType==NEURON else "ACTION",
               " Sink:", g.sinkNum,
-              " Weight:", round(g.weight, 3))
+              " Weight:", round(g.weight,3))
     brain = Brain(genome)
-    # Dummy sensor inputs; these could be positions, distances, or other values.
     sensor_inputs = [0.5, -0.3, 0.8]
     print("Activating brain with sensor inputs:", sensor_inputs)
     brain.activate(sensor_inputs)
