@@ -19,11 +19,11 @@ class Simulation:
         for ind in self.population:
             sensor_inputs = get_sensor_inputs(ind) if get_sensor_inputs else [ind.x/100, ind.y/100]
             actions = ind.update(sensor_inputs)
-            ind.x += actions[0]
-            ind.y += actions[1]
-            ind.x = max(10, min(90, ind.x))
-            ind.y = max(10, min(90, ind.y))
-            print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: {actions}")
+            dx = 1 if actions[0] > 0.5 else -1 if actions[0] < -0.5 else 0
+            dy = 1 if actions[1] > 0.5 else -1 if actions[1] < -0.5 else 0
+            ind.x = max(1, min(99, ind.x + dx))
+            ind.y = max(1, min(99, ind.y + dy))
+            print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
 
     def run_generation(self, steps=5):
         print(f"Running generation {self.generation}")
@@ -38,6 +38,6 @@ if __name__ == '__main__':
     import random
     #random.seed(42)
     sim = Simulation(population_size=POPULATION_SIZE)
-    for _ in range(2):
+    for _ in range(1):
         sim.run_generation(steps=1)
 

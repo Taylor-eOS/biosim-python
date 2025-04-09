@@ -1,22 +1,24 @@
 import pygame
+import math
 from simulation import Simulation
 
-def get_normalized_position_inputs(ind):
-    return [(ind.x - 50) / 50.0, (ind.y - 50) / 50.0]
-
-def apply_discrete_movement(ind, actions):
-    if actions[0] > 0.5:
-        ind.x += 1
-        print(f"move x+ ({ind.x:.1f},{ind.y:.1f})")
-    elif actions[0] < -0.5:
-        ind.x -= 1
-        print(f"move x- ({ind.x:.1f},{ind.y:.1f})")
-    if actions[1] > 0.5:
-        ind.y += 1
-        print(f"move y+ ({ind.x:.1f},{ind.y:.1f})")
-    elif actions[1] < -0.5:
-        ind.y -= 1
-        print(f"move y- ({ind.x:.1f},{ind.y:.1f})")
+def get_sensor_inputs(ind, population):
+    sensors = [
+        (ind.x - 50) / 50.0,
+        (ind.y - 50) / 50.0]
+    closest_distance = 1.0
+    closest_dx = 0.0
+    for other in population:
+        if other != ind:
+            dx = other.x - ind.x
+            dy = other.y - ind.y
+            distance = math.sqrt(dx*dx + dy*dy) / 50.0
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_dx = dx / 50.0
+    sensors.extend([1.0 - closest_distance, closest_dx])
+    print(f"closest_distance {closest_distance:.3f}, closest_dx {closest_dx:.3f}")
+    return sensors
 
 def main():
     pygame.init()
@@ -28,13 +30,12 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        sim.step(get_sensor_inputs=get_normalized_position_inputs)
+        sim.step(lambda ind: get_sensor_inputs(ind, sim.population))
         screen.fill((255, 255, 255))
         for ind in sim.population:
-            pygame.draw.circle(screen, (0, 0, 0), 
-                             (int(ind.x * 8), int(ind.y * 6)), 5)
+            pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 6)), 5)
         pygame.display.flip()
-        clock.tick(20)
+        clock.tick(5)
     pygame.quit()
 
 if __name__ == "__main__":
