@@ -3,15 +3,13 @@ SENSOR = 0
 NEURON = 1
 ACTION = 2
 
-#Parameters for genome and network.
-NUM_SENSES = 8
-NUM_ACTIONS = 8
-MAX_NEURONS = 16
-GENOME_INITIAL_LENGTH_MIN = 40
-GENOME_INITIAL_LENGTH_MAX = 40
-POPULATION_SIZE = 5
+NUM_SENSES = 2
+NUM_ACTIONS = 2
+MAX_NEURONS = 50
+GENOME_INITIAL_LENGTH_MIN = 100
+GENOME_INITIAL_LENGTH_MAX = 100
+POPULATION_SIZE = 3
 
-#Gene structure
 class Gene:
     def __init__(self, sourceType, sourceNum, sinkType, sinkNum, weight):
         self.sourceType = sourceType    #SENSOR or NEURON (for source)

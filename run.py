@@ -1,34 +1,42 @@
 import pygame
-import random
-from simulation import Simulation  #assuming you've moved Simulation into simulation.py
+from simulation import Simulation
 
-pygame.init()
-screen = pygame.display.set_mode((800, 600))
-clock = pygame.time.Clock()
-sim = Simulation()
+def get_normalized_position_inputs(ind):
+    return [(ind.x - 50) / 50.0, (ind.y - 50) / 50.0]
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+def apply_discrete_movement(ind, actions):
+    if actions[0] > 0.5:
+        ind.x += 1
+        print(f"move x+ ({ind.x:.1f},{ind.y:.1f})")
+    elif actions[0] < -0.5:
+        ind.x -= 1
+        print(f"move x- ({ind.x:.1f},{ind.y:.1f})")
+    if actions[1] > 0.5:
+        ind.y += 1
+        print(f"move y+ ({ind.x:.1f},{ind.y:.1f})")
+    elif actions[1] < -0.5:
+        ind.y -= 1
+        print(f"move y- ({ind.x:.1f},{ind.y:.1f})")
 
-    sensor_inputs = [random.uniform(-1, 1) for _ in range(8)]
-    for ind in sim.population:
-        actions = ind.update(sensor_inputs)
-        #Here apply the actions to the world state.
-        #For example, update the individual's position based on the action outputs.
-        ind.x += actions[0]
-        ind.y += actions[1]
-        #You could add boundaries, friction, collision or other world effects.
-    
-    screen.fill((255, 255, 255))
-    for ind in sim.population:
-        #Convert simulation coordinates to screen coordinates as needed.
-        pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 6)), 5)
-    
-    pygame.display.flip()
-    clock.tick(60)
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600))
+    clock = pygame.time.Clock()
+    sim = Simulation()
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        sim.step(get_sensor_inputs=get_normalized_position_inputs)
+        screen.fill((255, 255, 255))
+        for ind in sim.population:
+            pygame.draw.circle(screen, (0, 0, 0), 
+                             (int(ind.x * 8), int(ind.y * 6)), 5)
+        pygame.display.flip()
+        clock.tick(20)
+    pygame.quit()
 
-pygame.quit()
+if __name__ == "__main__":
+    main()
 

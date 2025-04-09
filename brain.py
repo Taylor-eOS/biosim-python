@@ -2,45 +2,14 @@ import math
 from utils import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, POPULATION_SIZE
 from display_network_diagram import GraphApp
 
-#Cull genes that don't drive any neurons.
-def cull_unused_neurons(genome):
-    #First pass: identify neurons that receive input from a sensor or from another neuron
-    driven_neurons = set()
-    for gene in genome:
-        if gene.sinkType == NEURON:
-            if gene.sourceType in (SENSOR, NEURON) and gene.sourceNum != gene.sinkNum:
-                driven_neurons.add(gene.sinkNum)
-    #Iteratively expand the set of active neurons by following the graph
-    changed = True
-    while changed:
-        changed = False
-        for gene in genome:
-            if gene.sinkType == NEURON and gene.sourceType == NEURON:
-                if gene.sourceNum in driven_neurons and gene.sinkNum not in driven_neurons:
-                    driven_neurons.add(gene.sinkNum)
-                    changed = True
-    #Now select only genes where both source and sink are valid (or source is a sensor)
-    active_genes = []
-    for gene in genome:
-        if gene.sinkType == ACTION:
-            if gene.sourceType == SENSOR or gene.sourceNum in driven_neurons:
-                active_genes.append(gene)
-        elif gene.sinkType == NEURON:
-            if gene.sinkNum in driven_neurons:
-                if gene.sourceType == SENSOR or gene.sourceNum in driven_neurons:
-                    active_genes.append(gene)
-    return active_genes
-
 class Brain:
     def __init__(self, genome, cull=True):
-        #Optionally cull unused genes.
         self.genome = cull_unused_neurons(genome) if cull else genome
-        self.neuron_connections = []  #Those with sinkType == NEURON.
-        self.action_connections = []  #Those with sinkType == ACTION.
+        self.neuron_connections = []
+        self.action_connections = []
         self.build_wiring()
 
     def build_wiring(self):
-        #Gather neuron ids appearing in the (culled) genome.
         neuron_ids = set()
         for gene in self.genome:
             if gene.sourceType == NEURON:
@@ -58,7 +27,6 @@ class Brain:
         self.neuron_connections = []
         self.action_connections = []
         for gene in self.genome:
-            #Create a shallow copy and remap neuron numbers.
             g = type(gene)(gene.sourceType, gene.sourceNum, gene.sinkType, gene.sinkNum, gene.weight)
             if g.sourceType == NEURON:
                 if g.sourceNum in remap:
@@ -104,4 +72,32 @@ class Brain:
         actions = [math.tanh(a) for a in actions]
         print("Action outputs:", [round(a,3) for a in actions])
         return actions
+
+def cull_unused_neurons(genome):
+    #First pass: identify neurons that receive input from a sensor or from another neuron
+    driven_neurons = set()
+    for gene in genome:
+        if gene.sinkType == NEURON:
+            if gene.sourceType in (SENSOR, NEURON) and gene.sourceNum != gene.sinkNum:
+                driven_neurons.add(gene.sinkNum)
+    #Iteratively expand the set of active neurons by following the graph
+    changed = True
+    while changed:
+        changed = False
+        for gene in genome:
+            if gene.sinkType == NEURON and gene.sourceType == NEURON:
+                if gene.sourceNum in driven_neurons and gene.sinkNum not in driven_neurons:
+                    driven_neurons.add(gene.sinkNum)
+                    changed = True
+    #Now select only genes where both source and sink are valid (or source is a sensor)
+    active_genes = []
+    for gene in genome:
+        if gene.sinkType == ACTION:
+            if gene.sourceType == SENSOR or gene.sourceNum in driven_neurons:
+                active_genes.append(gene)
+        elif gene.sinkType == NEURON:
+            if gene.sinkNum in driven_neurons:
+                if gene.sourceType == SENSOR or gene.sourceNum in driven_neurons:
+                    active_genes.append(gene)
+    return active_genes
 
