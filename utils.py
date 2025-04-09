@@ -1,24 +1,23 @@
 import random
-
-# Define source/sink types.
 SENSOR = 0
 NEURON = 1
 ACTION = 2
 
-# Parameters for genome and network.
-NUM_SENSES = 3
-NUM_ACTIONS = 2
-MAX_NEURONS = 10
-GENOME_INITIAL_LENGTH_MIN = 8
-GENOME_INITIAL_LENGTH_MAX = 12
+#Parameters for genome and network.
+NUM_SENSES = 8
+NUM_ACTIONS = 8
+MAX_NEURONS = 16
+GENOME_INITIAL_LENGTH_MIN = 40
+GENOME_INITIAL_LENGTH_MAX = 40
+POPULATION_SIZE = 5
 
-# Gene structure
+#Gene structure
 class Gene:
     def __init__(self, sourceType, sourceNum, sinkType, sinkNum, weight):
-        self.sourceType = sourceType    # SENSOR or NEURON (for source)
-        self.sourceNum = sourceNum      # if sensor, index within NUM_SENSES; if neuron, arbitrary id (will be remapped)
-        self.sinkType = sinkType        # if NEURON then neuron, if ACTION then action
-        self.sinkNum = sinkNum          # either neuron id (to be remapped) or action index
+        self.sourceType = sourceType    #SENSOR or NEURON (for source)
+        self.sourceNum = sourceNum      #if sensor, index within NUM_SENSES; if neuron, arbitrary id (will be remapped)
+        self.sinkType = sinkType        #if NEURON then neuron, if ACTION then action
+        self.sinkNum = sinkNum          #either neuron id (to be remapped) or action index
         self.weight = weight
 
     @staticmethod
@@ -33,7 +32,7 @@ def make_random_gene():
                 sinkType,
                 random.randint(0, 0x7fff),
                 Gene.make_random_weight())
-    # Immediately remap gene values into valid ranges.
+    #Immediately remap gene values into valid ranges.
     if gene.sourceType == NEURON:
         gene.sourceNum %= MAX_NEURONS
     else:
