@@ -1,64 +1,9 @@
 import tkinter as tk
 import random
 import math
+import ast
 from itertools import combinations
 from utils import SENSOR, NEURON, ACTION
-
-def ccw(A, B, C):
-    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
-
-def lines_intersect(a1, a2, b1, b2):
-    return (ccw(a1, b1, b2) != ccw(a2, b1, b2) and ccw(a1, a2, b1) != ccw(a1, a2, b2))
-
-def count_crossings(edges, positions):
-    crossings = 0
-    for (a, b), (c, d) in combinations(edges, 2):
-        if {a, b} & {c, d}:
-            continue
-        if lines_intersect(positions[a], positions[b], positions[c], positions[d]):
-            crossings += 1
-    return crossings
-
-def layout_graph(nodes, edges, width, height, iterations=50):
-    margin = 50
-    lane_x = {SENSOR: margin, NEURON: width // 2, ACTION: width - margin}
-    lanes = {SENSOR: [], NEURON: [], ACTION: []}
-    for node in nodes:
-        lanes[node[0]].append(node)
-    for lane in lanes:
-        lanes[lane].sort(key=lambda n: n[1])
-    order = {}
-    for lane in lanes:
-        for idx, node in enumerate(lanes[lane]):
-            order[node] = idx
-    neighbor_map = {node: [] for node in nodes}
-    for v, u in edges:
-        if v in nodes and u in nodes:
-            neighbor_map[v].append(u)
-            neighbor_map[u].append(v)
-    for _ in range(iterations):
-        for lane in lanes:
-            new_order = []
-            for node in lanes[lane]:
-                neighbor_orders = [order[n] for n in neighbor_map[node] if n[0] != lane]
-                barycenter = sum(neighbor_orders)/len(neighbor_orders) if neighbor_orders else order[node]
-                new_order.append((node, barycenter))
-            new_order.sort(key=lambda tup: tup[1])
-            lanes[lane] = [node for node, _ in new_order]
-            for idx, node in enumerate(lanes[lane]):
-                order[node] = idx
-    positions = {}
-    for lane in lanes:
-        lane_nodes = lanes[lane]
-        count = len(lane_nodes)
-        spacing = (height - 2*margin)/(count - 1) if count > 1 else 0
-        for i, node in enumerate(lane_nodes):
-            x_jitter = random.uniform(-50, 50)
-            y_jitter = random.uniform(-10, 10)
-            x = lane_x[lane] + x_jitter
-            y = margin + i * spacing + y_jitter
-            positions[node] = [x, y]
-    return positions, 0
 
 class GraphApp:
     def __init__(self, conn_list, canvas_width=1200, canvas_height=1000):
@@ -186,22 +131,88 @@ class GraphApp:
             label_id = self.edge_items[edge]["label"]
             self.canvas.coords(label_id, label_x, label_y)
 
+def ccw(A, B, C):
+    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+
+def lines_intersect(a1, a2, b1, b2):
+    return (ccw(a1, b1, b2) != ccw(a2, b1, b2) and ccw(a1, a2, b1) != ccw(a1, a2, b2))
+
+def count_crossings(edges, positions):
+    crossings = 0
+    for (a, b), (c, d) in combinations(edges, 2):
+        if {a, b} & {c, d}:
+            continue
+        if lines_intersect(positions[a], positions[b], positions[c], positions[d]):
+            crossings += 1
+    return crossings
+
+def layout_graph(nodes, edges, width, height, iterations=50):
+    margin = 50
+    lane_x = {SENSOR: margin, NEURON: width // 2, ACTION: width - margin}
+    lanes = {SENSOR: [], NEURON: [], ACTION: []}
+    for node in nodes:
+        lanes[node[0]].append(node)
+    for lane in lanes:
+        lanes[lane].sort(key=lambda n: n[1])
+    order = {}
+    for lane in lanes:
+        for idx, node in enumerate(lanes[lane]):
+            order[node] = idx
+    neighbor_map = {node: [] for node in nodes}
+    for v, u in edges:
+        if v in nodes and u in nodes:
+            neighbor_map[v].append(u)
+            neighbor_map[u].append(v)
+    for _ in range(iterations):
+        for lane in lanes:
+            new_order = []
+            for node in lanes[lane]:
+                neighbor_orders = [order[n] for n in neighbor_map[node] if n[0] != lane]
+                barycenter = sum(neighbor_orders)/len(neighbor_orders) if neighbor_orders else order[node]
+                new_order.append((node, barycenter))
+            new_order.sort(key=lambda tup: tup[1])
+            lanes[lane] = [node for node, _ in new_order]
+            for idx, node in enumerate(lanes[lane]):
+                order[node] = idx
+    positions = {}
+    for lane in lanes:
+        lane_nodes = lanes[lane]
+        count = len(lane_nodes)
+        spacing = (height - 2*margin)/(count - 1) if count > 1 else 0
+        for i, node in enumerate(lane_nodes):
+            x_jitter = random.uniform(-50, 50)
+            y_jitter = random.uniform(-10, 10)
+            x = lane_x[lane] + x_jitter
+            y = margin + i * spacing + y_jitter
+            positions[node] = [x, y]
+    return positions, 0
+
+def read_connections_from_file(filename):
+    with open(filename, 'r') as file:
+        content = file.read()
+    neuron_start = content.find("Neuron connections: ") + len("Neuron connections: ")
+    neuron_end = content.find("]", neuron_start) + 1
+    neuron_connections = ast.literal_eval(content[neuron_start:neuron_end])
+    action_start = content.find("Action connections: ") + len("Action connections: ")
+    action_end = content.find("]", action_start) + 1
+    action_connections = ast.literal_eval(content[action_start:action_end])
+    return neuron_connections + action_connections
+
 def main():
-    connections = [
+    test_connections = [
         (SENSOR, 0, NEURON, 0, 0.5),
         (SENSOR, 0, NEURON, 1, 0.5),
         (SENSOR, 2, NEURON, 0, 0.91),
         (SENSOR, 2, ACTION, 0, 0.19),
         (NEURON, 0, ACTION, 1, 0.36),
         (NEURON, 1, ACTION, 1, -0.18),
-        (SENSOR, 1, ACTION, 1, -0.69)
-    ]
-    #GraphApp(connections)
-    #connections2 = [(0, 8, 1, 10, 0.35), (0, 15, 1, 12, 0.12), (0, 13, 1, 6, 0.91), (0, 14, 1, 11, -0.81), (1, 5, 1, 2, 0.1), (1, 12, 1, 7, -0.44), (1, 6, 1, 1, 0.61), (0, 1, 1, 4, 0.83), (0, 5, 1, 3, 0.02), (0, 7, 1, 8, 0.91), (1, 10, 1, 1, -0.02), (0, 6, 1, 3, -0.87),(1, 10, 2, 3, -0.94), (0, 9, 2, 15, 0.4), (0, 7, 2, 5, 0.97), (0, 8, 2, 7, 0.22), (0, 11, 2, 4, -0.08), (0, 8, 2, 4, 0.69), (1, 0, 2, 14, 0.31), (0, 7, 2, 3, -0.47), (0, 3, 2, 13, 0.8), (0, 15, 2, 1, -0.69), (0, 2, 2, 3, -0.23), (1, 9, 2, 12, 0.94), (1, 8, 2, 3, 0.36), (1, 4, 2, 5, -0.78), (0, 6, 2, 11, -0.69), (0, 12, 2, 9, -0.52), (0, 9, 2, 13, 0.46), (0, 8, 2, 7, 0.8), (0, 8, 2, 0, -0.99), (1, 11, 2, 11, -0.87)]
-    #GraphApp(connections2)
-    connections3 = [(0, 3, 1, 0, -0.75)] + [(0, 2, 2, 0, 0.67), (0, 2, 2, 0, 0.4), (0, 2, 2, 0, -0.62), (0, 2, 2, 0, -0.57), (0, 2, 2, 0, -0.35), (0, 2, 2, 0, -0.37), (0, 0, 2, 1, 0.95), (0, 2, 2, 0, -0.65), (0, 2, 2, 0, 0.02), (0, 2, 2, 0, -0.8), (0, 2, 2, 0, 0.36), (0, 2, 2, 0, 0.46), (0, 2, 2, 0, 0.89), (0, 2, 2, 0, 0.24), (0, 2, 2, 0, -0.61), (0, 2, 2, 0, 0.85), (0, 2, 2, 0, -0.23), (0, 2, 2, 0, -0.97), (0, 2, 2, 0, 0.01), (0, 2, 2, 0, 0.12), (0, 2, 2, 0, 0.24), (0, 2, 2, 0, -0.72), (0, 2, 2, 0, 0.21), (0, 2, 2, 0, 0.47), (0, 2, 2, 0, 0.75), (0, 2, 2, 0, -0.93), (0, 2, 2, 0, 0.45), (0, 2, 2, 0, 0.32), (0, 2, 2, 0, 0.08), (0, 1, 2, 0, 0.56), (0, 2, 2, 0, 0.32), (0, 2, 2, 0, 0.39), (0, 2, 2, 0, 0.39), (0, 2, 2, 0, 0.31), (0, 2, 2, 0, -0.59), (0, 2, 2, 0, -0.44), (0, 3, 2, 1, -0.87), (0, 2, 2, 0, 0.98), (0, 2, 2, 0, 0.42), (0, 2, 2, 0, -0.9), (0, 2, 2, 0, 0.13), (0, 2, 2, 0, -0.69), (0, 2, 2, 0, -0.89), (0, 2, 2, 0, -0.34), (0, 2, 2, 0, -0.99), (0, 2, 2, 0, -0.1), (0, 2, 2, 0, -0.95), (0, 2, 2, 0, 0.21), (0, 2, 2, 0, 0.47), (0, 2, 2, 0, -0.95), (0, 2, 2, 0, -0.81), (0, 2, 2, 0, 0.64), (0, 2, 2, 0, -0.15), (0, 2, 2, 0, -0.7), (0, 2, 2, 0, 0.66), (0, 2, 2, 0, 0.52), (0, 2, 2, 0, -0.05), (0, 2, 2, 0, 0.01), (0, 2, 2, 0, 0.98), (0, 2, 2, 0, 0.08), (0, 2, 2, 0, -0.22), (0, 2, 2, 0, 0.27), (0, 2, 2, 0, 0.33), (0, 2, 2, 0, -0.62), (0, 2, 2, 0, 0.56), (0, 3, 2, 0, -0.58), (0, 2, 2, 0, 0.16), (0, 2, 2, 0, 0.99), (0, 2, 2, 0, -0.53), (0, 2, 2, 0, -0.59), (0, 2, 2, 0, -0.8), (0, 2, 2, 0, -0.37), (0, 2, 2, 0, -0.2), (0, 2, 2, 0, 0.33), (0, 2, 2, 0, -0.94), (0, 2, 2, 0, -0.76), (0, 2, 2, 0, -0.21), (0, 2, 2, 0, -0.05), (0, 2, 2, 0, -0.63), (0, 2, 2, 0, -0.25), (0, 2, 2, 0, 0.58), (0, 1, 2, 1, -0.08), (0, 2, 2, 0, -0.16), (0, 2, 2, 0, 0.58), (0, 2, 2, 0, 0.61), (0, 2, 2, 0, -0.4), (0, 2, 2, 0, -0.62), (0, 2, 2, 0, 0.06), (0, 2, 2, 0, -0.68), (0, 2, 2, 0, -0.79)]
-    GraphApp(connections3)
+        (SENSOR, 1, ACTION, 1, -0.69)]
+    #GraphApp(test_connections)
 
-if __name__ == '__main__':
+    #Read connections from file
+    connections_from_file = read_connections_from_file("connections.txt")
+    GraphApp(connections_from_file)
+
+if __name__ == "__main__":
     main()
 
