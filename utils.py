@@ -5,10 +5,10 @@ ACTION = 2
 
 NUM_SENSES = 4
 NUM_ACTIONS = 2
-MAX_NEURONS = 50
-GENOME_INITIAL_LENGTH_MIN = 100
-GENOME_INITIAL_LENGTH_MAX = 100
-POPULATION_SIZE = 15
+MAX_NEURONS = 20
+GENOME_INITIAL_LENGTH_MIN = 30
+GENOME_INITIAL_LENGTH_MAX = 30
+POPULATION_SIZE = 8
 
 class Gene:
     def __init__(self, sourceType, sourceNum, sinkType, sinkNum, weight):
@@ -23,8 +23,15 @@ class Gene:
         return random.uniform(-1.0, 1.0)
 
 def make_random_gene():
-    #if random.random() < 0.5:
+    #if random.random() < 0.7: #Testing genome
     #    return Gene(SENSOR, 2, ACTION, 0, random.uniform(-1.0, 1.0))
+    #    return Gene(
+    #        sourceType=SENSOR,
+    #        sourceNum=random.choice([2, 3]),  #Only proximity/direction
+    #        sinkType=ACTION,
+    #        sinkNum=random.randint(0, 1),
+    #        weight=random.uniform(-2.0, 2.0))
+
     sourceType = SENSOR if random.getrandbits(1) == 0 else NEURON
     sinkType = NEURON if random.getrandbits(1) == 0 else ACTION
     gene = Gene(sourceType,

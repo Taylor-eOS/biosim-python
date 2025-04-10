@@ -9,6 +9,9 @@ class Individual:
         self.x = x
         self.y = y
         self.fitness = 0.0
+        print("Action connections sensor use:", [
+            (g.sourceType, g.sourceNum, g.sinkNum, g.weight) 
+            for g in self.brain.action_connections])
 
     def update(self, sensor_inputs):
         actions = self.brain.activate(sensor_inputs)
