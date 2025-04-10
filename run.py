@@ -1,5 +1,6 @@
 import pygame
 import math
+from utils import log_file
 from simulation import Simulation
 
 def get_sensor_inputs(ind, population):
@@ -21,6 +22,8 @@ def get_sensor_inputs(ind, population):
     return sensors
 
 def main():
+    with open(log_file, "w"):
+        pass
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
     clock = pygame.time.Clock()
@@ -35,7 +38,7 @@ def main():
         for ind in sim.population:
             pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 6)), 5)
         pygame.display.flip()
-        clock.tick(5)
+        clock.tick(8)
     pygame.quit()
 
 if __name__ == "__main__":

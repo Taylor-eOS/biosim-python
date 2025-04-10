@@ -1,5 +1,5 @@
 import math
-from utils import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, POPULATION_SIZE
+from utils import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, POPULATION_SIZE, log_file
 from display_network_diagram import GraphApp
 
 class Brain:
@@ -45,6 +45,9 @@ class Brain:
         action_connections = [(g.sourceType, g.sourceNum, g.sinkType, g.sinkNum, round(g.weight,2)) for g in self.action_connections]
         print("Neuron connections:", neuron_connections)
         print("Action connections:", action_connections)
+        with open(log_file, "a") as f:
+            f.write("Neuron connections: " + str(neuron_connections) + "\n")
+            f.write("Action connections: " + str(action_connections) + "\n")
         #GraphApp(neuron_connections + action_connections)
         self.neurons = [0.0] * self.num_neurons
 
