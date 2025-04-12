@@ -1,12 +1,12 @@
 import random
 from individual import Individual
-from genome import NUM_SENSES, POPULATION_SIZE
+from genome import POPULATION_SIZE
 
 class Simulation:
     def __init__(self, population_size=POPULATION_SIZE):
-        self.population = []
         self.population_size = population_size
         self.generation = 0
+        self.current_step = 0
         self.init_population()
 
     def init_population(self):
@@ -25,18 +25,22 @@ class Simulation:
             ind.y = max(1, min(99, ind.y + dy))
             print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
 
-    def run_generation(self, steps=5):
-        print(f"Running generation {self.generation}")
-        for _ in range(steps):
-            self.step()
-        for ind in self.population:
-            print(ind)
-        self.generation += 1
-
-if __name__ == '__main__':
-    import random
-    #random.seed(42)
-    sim = Simulation(population_size=POPULATION_SIZE)
-    for _ in range(1):
-        sim.run_generation(steps=1)
+    def update(self, generation_steps, sensor_callback=None):
+        self.step(get_sensor_inputs=sensor_callback)
+        self.current_step += 1
+        if self.current_step >= generation_steps:
+            print(f"--- Generation {self.generation} complete ---")
+            survivors = [ind for ind in self.population if ind.x > 50]
+            print(f"Generation {self.generation} survivors: {len(survivors)} out of {self.population_size}")
+            if not survivors:
+                survivors = self.population[:]
+                print("No survivors on right half. Using full population for reproduction.")
+            new_population = []
+            while len(new_population) < self.population_size:
+                parent = random.choice(survivors)
+                child = Individual(x=random.uniform(0, 100), y=random.uniform(0, 100), genome=parent.genome)
+                new_population.append(child)
+            self.population = new_population
+            self.generation += 1
+            self.current_step = 0
 
