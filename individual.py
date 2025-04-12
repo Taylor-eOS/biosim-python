@@ -1,24 +1,44 @@
-from genome import make_random_genome, gene_dtype, NUM_SENSES, MAX_NEURONS, NUM_ACTIONS
+from settings import SENSOR, NEURON, ACTION, NUM_SENSES, MAX_NEURONS, NUM_ACTIONS
+from genome import make_random_genome, gene_dtype
 from brain import Brain
 import random
 import numpy as np
 
-def mutate_genome(genome, mutation_rate=0.1):
+def mutate_genome(genome, mutation_rate=0.3, edit_rate=0.3):
+    genome = genome.copy()
     if random.random() < mutation_rate:
         new_gene = np.empty(1, dtype=gene_dtype)
-        new_gene['sourceType'] = np.random.randint(0, 2, size=1, dtype=np.uint8)
-        rand_vals = np.random.randint(0, 2, size=1, dtype=np.uint8)
-        new_gene['sinkType'] = np.where(rand_vals == 0, 1, 2)
-        new_gene['sourceNum'] = np.random.randint(0, 0x8000, size=1, dtype=np.uint16)
-        new_gene['sinkNum'] = np.random.randint(0, 0x8000, size=1, dtype=np.uint16)
-        sensor_mask = (new_gene['sourceType'] == 0)
-        new_gene['sourceNum'][sensor_mask] %= NUM_SENSES
-        new_gene['sourceNum'][~sensor_mask] %= MAX_NEURONS
-        neuron_mask = (new_gene['sinkType'] == 1)
-        new_gene['sinkNum'][neuron_mask] %= MAX_NEURONS
-        new_gene['sinkNum'][~neuron_mask] %= NUM_ACTIONS
-        new_gene['weight'] = np.random.uniform(-1.0, 1.0, size=1).astype(np.float32)
+        new_gene['sourceType'] = np.random.randint(0, 2, dtype=np.uint8)
+        rand_vals = np.random.randint(0, 2, dtype=np.uint8)
+        new_gene['sinkType'] = 1 if rand_vals == 0 else 2
+        new_gene['sourceNum'] = np.random.randint(0, 0x8000, dtype=np.uint16)
+        new_gene['sinkNum'] = np.random.randint(0, 0x8000, dtype=np.uint16)
+        if new_gene['sourceType'] == SENSOR:
+            new_gene['sourceNum'] %= NUM_SENSES
+        else:
+            new_gene['sourceNum'] %= MAX_NEURONS
+        if new_gene['sinkType'] == NEURON:
+            new_gene['sinkNum'] %= MAX_NEURONS
+        else:
+            new_gene['sinkNum'] %= NUM_ACTIONS
+        new_gene['weight'] = np.random.uniform(-1.0, 1.0)
         genome = np.append(genome, new_gene)
+    if random.random() < edit_rate and len(genome) > 0:
+        gene_idx = random.randint(0, len(genome) - 1)
+        field = random.choice(['sourceType', 'sinkType', 'sourceNum', 'sinkNum', 'weight'])
+        if field == 'sourceType':
+            genome[gene_idx]['sourceType'] = random.randint(0, 1)
+            genome[gene_idx]['sourceNum'] %= NUM_SENSES if genome[gene_idx]['sourceType'] == SENSOR else MAX_NEURONS
+        elif field == 'sinkType':
+            genome[gene_idx]['sinkType'] = random.randint(1, 2)
+            genome[gene_idx]['sinkNum'] %= MAX_NEURONS if genome[gene_idx]['sinkType'] == NEURON else NUM_ACTIONS
+        elif field == 'sourceNum':
+            genome[gene_idx]['sourceNum'] = random.randint(0, NUM_SENSES - 1) if genome[gene_idx]['sourceType'] == SENSOR else random.randint(0, MAX_NEURONS - 1)
+        elif field == 'sinkNum':
+            genome[gene_idx]['sinkNum'] = random.randint(0, MAX_NEURONS - 1) if genome[gene_idx]['sinkType'] == NEURON else random.randint(0, NUM_ACTIONS - 1)
+        elif field == 'weight':
+            genome[gene_idx]['weight'] += np.random.uniform(-0.5, 0.5)
+            genome[gene_idx]['weight'] = np.clip(genome[gene_idx]['weight'], -1.0, 1.0)
     return genome
 
 class Individual:

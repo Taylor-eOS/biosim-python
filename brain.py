@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from genome import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, log_file
+from settings import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, log_file
 
 class Brain:
     def __init__(self, genome, cull=True):

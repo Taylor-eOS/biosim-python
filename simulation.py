@@ -1,6 +1,6 @@
 import random
 from individual import Individual
-from genome import POPULATION_SIZE
+from settings import POPULATION_SIZE
 
 class Simulation:
     def __init__(self, population_size=POPULATION_SIZE):
@@ -30,7 +30,7 @@ class Simulation:
         self.current_step += 1
         if self.current_step >= generation_steps:
             print(f"--- Generation {self.generation} complete ---")
-            survivors = [ind for ind in self.population if ind.x > 50]
+            survivors = [ind for ind in self.population if ind.x > 80]
             print(f"Generation {self.generation} survivors: {len(survivors)} out of {self.population_size}")
             if not survivors:
                 survivors = self.population[:]

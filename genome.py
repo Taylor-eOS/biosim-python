@@ -1,15 +1,6 @@
 import numpy as np
 import random
-
-SENSOR = 0
-NEURON = 1
-ACTION = 2
-log_file = 'log.txt'
-NUM_SENSES = 4
-NUM_ACTIONS = 8
-MAX_NEURONS = 30
-GENOME_LENGTH = 60
-POPULATION_SIZE = 8
+from settings import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, GENOME_LENGTH
 
 gene_dtype = np.dtype([
     ('sourceType', np.uint8),

@@ -1,6 +1,6 @@
 import pygame
 import math
-from genome import log_file
+from settings import log_file, TICKS, GENERATION_STEPS
 from simulation import Simulation
 
 def get_sensor_inputs(ind, population):
@@ -28,7 +28,7 @@ def main():
     clock = pygame.time.Clock()
     sim = Simulation()
     running = True
-    generation_steps = 80
+    generation_steps = GENERATION_STEPS
     visual_mode = True  #set to False for max-speed CPU mode
 
     while running:
@@ -38,14 +38,13 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_v:
                     visual_mode = not visual_mode
-                    print("Visual mode:", visual_mode
         if visual_mode:
             sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population))
             screen.fill((255, 255, 255))
             for ind in sim.population:
                 pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 6)), 5)
             pygame.display.flip()
-            clock.tick(40)
+            clock.tick(TICKS)
         else:
             # Run entire generation instantly, no rendering
             sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population))
