@@ -1,6 +1,6 @@
 import pygame
 import math
-from utils import log_file
+from genome import log_file
 from simulation import Simulation
 
 def get_sensor_inputs(ind, population):

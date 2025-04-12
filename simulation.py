@@ -1,6 +1,6 @@
 import random
 from individual import Individual
-from utils import NUM_SENSES, POPULATION_SIZE
+from genome import NUM_SENSES, POPULATION_SIZE
 
 class Simulation:
     def __init__(self, population_size=POPULATION_SIZE):
@@ -29,7 +29,6 @@ class Simulation:
         print(f"Running generation {self.generation}")
         for _ in range(steps):
             self.step()
-        #At the end of a generation you might rank individuals
         for ind in self.population:
             print(ind)
         self.generation += 1

@@ -1,52 +1,38 @@
+import numpy as np
 import random
 
 SENSOR = 0
 NEURON = 1
 ACTION = 2
 log_file = 'log.txt'
-
 NUM_SENSES = 4
-NUM_ACTIONS = 2
-MAX_NEURONS = 20
-GENOME_INITIAL_LENGTH_MIN = 30
-GENOME_INITIAL_LENGTH_MAX = 30
+NUM_ACTIONS = 8
+MAX_NEURONS = 30
+GENOME_LENGTH = 60
 POPULATION_SIZE = 8
 
-class Gene:
-    def __init__(self, sourceType, sourceNum, sinkType, sinkNum, weight):
-        self.sourceType = sourceType    #SENSOR or NEURON (for source)
-        self.sourceNum = sourceNum      #if sensor, index within NUM_SENSES; if neuron, arbitrary id (will be remapped)
-        self.sinkType = sinkType        #if NEURON then neuron, if ACTION then action
-        self.sinkNum = sinkNum          #either neuron id (to be remapped) or action index
-        self.weight = weight
-
-    @staticmethod
-    def make_random_weight():
-        return random.uniform(-1.0, 1.0)
-
-def make_random_gene():
-    #if random.random() < 0.3: #Testing genome
-    #    return Gene(sourceType=SENSOR, sourceNum=random.choice([2, 3]), sinkType=ACTION, sinkNum=random.randint(0, 1), weight=random.uniform(-2.0, 2.0))
-
-    sourceType = SENSOR if random.getrandbits(1) == 0 else NEURON
-    sinkType = NEURON if random.getrandbits(1) == 0 else ACTION
-    gene = Gene(sourceType,
-                random.randint(0, 0x7fff),
-                sinkType,
-                random.randint(0, 0x7fff),
-                Gene.make_random_weight())
-    #Immediately remap gene values into valid ranges.
-    if gene.sourceType == NEURON:
-        gene.sourceNum %= MAX_NEURONS
-    else:
-        gene.sourceNum %= NUM_SENSES
-    if gene.sinkType == NEURON:
-        gene.sinkNum %= MAX_NEURONS
-    else:
-        gene.sinkNum %= NUM_ACTIONS
-    return gene
+gene_dtype = np.dtype([
+    ('sourceType', np.uint8),
+    ('sourceNum', np.uint8),
+    ('sinkType', np.uint8),
+    ('sinkNum', np.uint8),
+    ('weight', np.float32)
+])
 
 def make_random_genome():
-    length = random.randint(GENOME_INITIAL_LENGTH_MIN, GENOME_INITIAL_LENGTH_MAX)
-    return [make_random_gene() for _ in range(length)]
+    length = GENOME_LENGTH
+    genome = np.empty(length, dtype=gene_dtype)
+    genome['sourceType'] = np.random.randint(0, 2, size=length, dtype=np.uint8)  # 0 = SENSOR, 1 = NEURON
+    rand_vals = np.random.randint(0, 2, size=length, dtype=np.uint8)
+    genome['sinkType'] = np.where(rand_vals == 0, NEURON, ACTION)
+    genome['sourceNum'] = np.random.randint(0, 0x8000, size=length, dtype=np.uint16)
+    genome['sinkNum'] = np.random.randint(0, 0x8000, size=length, dtype=np.uint16)
+    sensor_mask = (genome['sourceType'] == SENSOR)
+    genome['sourceNum'][sensor_mask] %= NUM_SENSES
+    genome['sourceNum'][~sensor_mask] %= MAX_NEURONS
+    neuron_mask = (genome['sinkType'] == NEURON)
+    genome['sinkNum'][neuron_mask] %= MAX_NEURONS
+    genome['sinkNum'][~neuron_mask] %= NUM_ACTIONS
+    genome['weight'] = np.random.uniform(-1.0, 1.0, size=length).astype(np.float32)
+    return genome
 
