@@ -4,7 +4,31 @@ from brain import Brain
 import random
 import numpy as np
 
-def mutate_genome(genome, mutation_rate=0.3, edit_rate=0.3):
+class Individual:
+    def __init__(self, genome=None, x=0.0, y=0.0):
+        if genome is None:
+            self.genome = make_random_genome()
+        else:
+            self.genome = mutate_genome(genome)
+        self.brain = Brain(self.genome)
+        self.x = x
+        self.y = y
+        self.fitness = 0.0
+        if False:
+            print("Action connections (sensor->action):", 
+                  self.brain.sensor_action.tolist() if self.brain.sensor_action.size else [])
+            print("Action connections (neuron->action):", 
+                  self.brain.neuron_action.tolist() if self.brain.neuron_action.size else [])
+
+    def update(self, sensor_inputs):
+        actions = self.brain.activate(sensor_inputs)
+        self.fitness += float(np.sum(np.abs(actions)))
+        return actions
+
+    def __repr__(self):
+        return "<Individual pos=({:.2f},{:.2f}) fitness={:.2f}>".format(self.x, self.y, self.fitness)
+
+def mutate_genome(genome, mutation_rate=0.3, edit_rate=0.2):
     genome = genome.copy()
     if random.random() < mutation_rate:
         new_gene = np.empty(1, dtype=gene_dtype)
@@ -40,27 +64,4 @@ def mutate_genome(genome, mutation_rate=0.3, edit_rate=0.3):
             genome[gene_idx]['weight'] += np.random.uniform(-0.5, 0.5)
             genome[gene_idx]['weight'] = np.clip(genome[gene_idx]['weight'], -1.0, 1.0)
     return genome
-
-class Individual:
-    def __init__(self, genome=None, x=0.0, y=0.0):
-        if genome is None:
-            self.genome = make_random_genome()
-        else:
-            self.genome = mutate_genome(genome)  # mutation on offspring genomes only
-        self.brain = Brain(self.genome)
-        self.x = x
-        self.y = y
-        self.fitness = 0.0
-        print("Action connections (sensor->action):", 
-              self.brain.sensor_action.tolist() if self.brain.sensor_action.size else [])
-        print("Action connections (neuron->action):", 
-              self.brain.neuron_action.tolist() if self.brain.neuron_action.size else [])
-
-    def update(self, sensor_inputs):
-        actions = self.brain.activate(sensor_inputs)
-        self.fitness += float(np.sum(np.abs(actions)))
-        return actions
-
-    def __repr__(self):
-        return "<Individual pos=({:.2f},{:.2f}) fitness={:.2f}>".format(self.x, self.y, self.fitness)
 

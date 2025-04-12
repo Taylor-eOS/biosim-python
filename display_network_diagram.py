@@ -3,7 +3,7 @@ import random
 import math
 import ast
 from itertools import combinations
-from genome import SENSOR, NEURON, ACTION
+from settings import SENSOR, NEURON, ACTION
 
 class GraphApp:
     def __init__(self, conn_list, canvas_width=1200, canvas_height=1000):

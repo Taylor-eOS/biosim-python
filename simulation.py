@@ -1,6 +1,6 @@
 import random
 from individual import Individual
-from settings import POPULATION_SIZE
+from settings import POPULATION_SIZE, DEBUG
 
 class Simulation:
     def __init__(self, population_size=POPULATION_SIZE):
@@ -23,15 +23,14 @@ class Simulation:
             dy = 1 if actions[1] > 0.5 else -1 if actions[1] < -0.5 else 0
             ind.x = max(1, min(99, ind.x + dx))
             ind.y = max(1, min(99, ind.y + dy))
-            print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
+            if DEBUG: print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
 
     def update(self, generation_steps, sensor_callback=None):
         self.step(get_sensor_inputs=sensor_callback)
         self.current_step += 1
         if self.current_step >= generation_steps:
-            print(f"--- Generation {self.generation} complete ---")
-            survivors = [ind for ind in self.population if ind.x > 80]
-            print(f"Generation {self.generation} survivors: {len(survivors)} out of {self.population_size}")
+            survivors = self.get_survivors()
+            print(f"Generation {self.generation} survivors: {len(survivors)}, {len(survivors)/self.population_size*100:.0f}%")
             if not survivors:
                 survivors = self.population[:]
                 print("No survivors on right half. Using full population for reproduction.")
@@ -43,4 +42,8 @@ class Simulation:
             self.population = new_population
             self.generation += 1
             self.current_step = 0
+
+    def get_survivors(self):
+        #return [ind for ind in self.population if ind.x > 85]
+        return [ind for ind in self.population if 40 < ind.x < 60]
 

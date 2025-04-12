@@ -7,8 +7,7 @@ gene_dtype = np.dtype([
     ('sourceNum', np.uint8),
     ('sinkType', np.uint8),
     ('sinkNum', np.uint8),
-    ('weight', np.float32)
-])
+    ('weight', np.float32)])
 
 def make_random_genome():
     length = GENOME_LENGTH

@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from settings import SENSOR, NEURON, ACTION, NUM_SENSES, NUM_ACTIONS, MAX_NEURONS, log_file
+from settings import SENSOR, NEURON, ACTION, NUM_ACTIONS, MAX_NEURONS, log_file, DEBUG
 
 class Brain:
     def __init__(self, genome, cull=True):
@@ -30,10 +30,11 @@ class Brain:
         action_connections = self.genome[self.genome['sinkType'] == ACTION]
         self.sensor_action = action_connections[action_connections['sourceType'] == SENSOR]
         self.neuron_action = action_connections[action_connections['sourceType'] == NEURON]
-        print("Neuron connections (sensor->neuron):", self.sensor_neuron.tolist())
-        print("Neuron connections (neuron->neuron):", self.neuron_neuron.tolist())
-        print("Action connections (sensor->action):", self.sensor_action.tolist())
-        print("Action connections (neuron->action):", self.neuron_action.tolist())
+        if False:
+            print("Neuron connections (sensor->neuron):", self.sensor_neuron.tolist())
+            print("Neuron connections (neuron->neuron):", self.neuron_neuron.tolist())
+            print("Action connections (sensor->action):", self.sensor_action.tolist())
+            print("Action connections (neuron->action):", self.neuron_action.tolist())
         
     def activate(self, sensor_inputs, iterations=2):
         sensor_inputs = np.array(sensor_inputs, dtype=np.float32)
@@ -48,7 +49,7 @@ class Brain:
                 np.add.at(new_neurons, self.neuron_neuron['sinkNum'],
                           self.neuron_neuron['weight'] * src_vals)
             self.neurons = np.tanh(new_neurons)
-            print("Neuron outputs:", np.round(self.neurons, 3).tolist())
+            if DEBUG: print("Neuron outputs:", ["{:.3f}".format(x) for x in np.round(self.neurons, 3)])
         actions = np.zeros(NUM_ACTIONS, dtype=np.float32)
         if self.sensor_action.size:
             src_vals = sensor_inputs[self.sensor_action['sourceNum']]
@@ -59,7 +60,7 @@ class Brain:
             np.add.at(actions, self.neuron_action['sinkNum'],
                       self.neuron_action['weight'] * src_vals)
         actions = np.tanh(actions)
-        print("Action outputs:", np.round(actions, 3).tolist())
+        if DEBUG: print("Action outputs:", ["{:.3f}".format(x) for x in np.round(actions, 3)])
         return actions
 
     def cull_unused_neurons(self, genome):
