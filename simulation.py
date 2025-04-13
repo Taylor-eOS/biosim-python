@@ -1,18 +1,19 @@
 import random
 from individual import Individual
-from settings import POPULATION_SIZE, DEBUG
+from settings import POPULATION_SIZE
 
 class Simulation:
-    def __init__(self, population_size=POPULATION_SIZE):
-        self.population_size = population_size
+    def __init__(self):
         self.generation = 0
         self.current_step = 0
+        self.survival_rate = 0
+        self.training_stage = 0
         self.init_population()
 
     def init_population(self):
         self.population = []
-        for _ in range(self.population_size):
-            ind = Individual(x=random.uniform(0, 100), y=random.uniform(0, 100))
+        for _ in range(POPULATION_SIZE):
+            ind = Individual(x=random.randint(20, 80), y=random.randint(20, 80))
             self.population.append(ind)
 
     def step(self, get_sensor_inputs=None):
@@ -23,27 +24,47 @@ class Simulation:
             dy = 1 if actions[1] > 0.5 else -1 if actions[1] < -0.5 else 0
             ind.x = max(1, min(99, ind.x + dx))
             ind.y = max(1, min(99, ind.y + dy))
-            if DEBUG: print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
+            ind.last_dx = dx
+            ind.last_dy = dy
+            if False: print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
 
     def update(self, generation_steps, sensor_callback=None):
         self.step(get_sensor_inputs=sensor_callback)
         self.current_step += 1
         if self.current_step >= generation_steps:
             survivors = self.get_survivors()
-            print(f"Generation {self.generation} survivors: {len(survivors)}, {len(survivors)/self.population_size*100:.0f}%")
+            self.survival_rate = len(survivors) / POPULATION_SIZE
+            print(f"Generation {self.generation} survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
             if not survivors:
                 survivors = self.population[:]
-                print("No survivors on right half. Using full population for reproduction.")
+                print("No survivors")
             new_population = []
-            while len(new_population) < self.population_size:
+            while len(new_population) < POPULATION_SIZE:
                 parent = random.choice(survivors)
-                child = Individual(x=random.uniform(0, 100), y=random.uniform(0, 100), genome=parent.genome)
+                child = Individual(x=random.randint(20, 80), y=random.randint(20, 80), genome=parent.genome)
                 new_population.append(child)
             self.population = new_population
             self.generation += 1
             self.current_step = 0
 
     def get_survivors(self):
-        #return [ind for ind in self.population if ind.x > 85]
-        return [ind for ind in self.population if 40 < ind.x < 60]
+        """if self.training_stage == 0:
+            survivors = [ind for ind in self.population if ind.x > 50]
+        elif self.training_stage == 1:
+            survivors = [ind for ind in self.population if ind.x > 70]
+        elif self.training_stage == 2:
+            survivors = [ind for ind in self.population if ind.x > 85]
+        else:
+            survivors = [ind for ind in self.population if 85 < ind.x < 98]
+        print(f"Training stage {self.training_stage}")
+        if self.survival_rate > 0.92 and self.training_stage < 3:
+            self.training_stage += 1
+            print(f"Set training stage to {self.training_stage}")"""
+        #survivors = [ind for ind in self.population if ind.x > 85]
+        def meets_criteria(ind):
+            #return ind.x > 80
+            return 80 < ind.x < 98
+            #return 40 < ind.x < 60 and 40 < ind.y < 60
+        survivors = [ind for ind in self.population if meets_criteria(ind)]
+        return survivors
 

@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from settings import SENSOR, NEURON, ACTION, NUM_ACTIONS, MAX_NEURONS, log_file, DEBUG
+from settings import SENSOR, NEURON, ACTION, NUM_ACTIONS, MAX_NEURONS, log_file
 
 class Brain:
     def __init__(self, genome, cull=True):
@@ -49,7 +49,7 @@ class Brain:
                 np.add.at(new_neurons, self.neuron_neuron['sinkNum'],
                           self.neuron_neuron['weight'] * src_vals)
             self.neurons = np.tanh(new_neurons)
-            if DEBUG: print("Neuron outputs:", ["{:.3f}".format(x) for x in np.round(self.neurons, 3)])
+            if False: print("Neuron outputs:", ["{:.3f}".format(x) for x in np.round(self.neurons, 3)])
         actions = np.zeros(NUM_ACTIONS, dtype=np.float32)
         if self.sensor_action.size:
             src_vals = sensor_inputs[self.sensor_action['sourceNum']]
@@ -60,7 +60,7 @@ class Brain:
             np.add.at(actions, self.neuron_action['sinkNum'],
                       self.neuron_action['weight'] * src_vals)
         actions = np.tanh(actions)
-        if DEBUG: print("Action outputs:", ["{:.3f}".format(x) for x in np.round(actions, 3)])
+        if False: print("Action outputs:", ["{:.3f}".format(x) for x in np.round(actions, 3)])
         return actions
 
     def cull_unused_neurons(self, genome):

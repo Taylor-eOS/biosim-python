@@ -1,11 +1,11 @@
+import random
+import numpy as np
 from settings import SENSOR, NEURON, ACTION, NUM_SENSES, MAX_NEURONS, NUM_ACTIONS
 from genome import make_random_genome, gene_dtype
 from brain import Brain
-import random
-import numpy as np
 
 class Individual:
-    def __init__(self, genome=None, x=0.0, y=0.0):
+    def __init__(self, genome=None, x=0, y=0):
         if genome is None:
             self.genome = make_random_genome()
         else:
@@ -13,7 +13,8 @@ class Individual:
         self.brain = Brain(self.genome)
         self.x = x
         self.y = y
-        self.fitness = 0.0
+        self.last_dx = 0
+        self.last_dy = 0
         if False:
             print("Action connections (sensor->action):", 
                   self.brain.sensor_action.tolist() if self.brain.sensor_action.size else [])
@@ -22,13 +23,12 @@ class Individual:
 
     def update(self, sensor_inputs):
         actions = self.brain.activate(sensor_inputs)
-        self.fitness += float(np.sum(np.abs(actions)))
         return actions
 
     def __repr__(self):
-        return "<Individual pos=({:.2f},{:.2f}) fitness={:.2f}>".format(self.x, self.y, self.fitness)
+        return f"<Individual pos=({int(self.x)},{int(self.y)})>"
 
-def mutate_genome(genome, mutation_rate=0.3, edit_rate=0.2):
+def mutate_genome(genome, mutation_rate=0.2, edit_rate=0.1):
     genome = genome.copy()
     if random.random() < mutation_rate:
         new_gene = np.empty(1, dtype=gene_dtype)

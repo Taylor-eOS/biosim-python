@@ -3,7 +3,7 @@ import math
 from settings import log_file, SPEED, GENERATION_STEPS, VISUAL_MODE
 from simulation import Simulation
 
-def get_sensor_inputs(ind, population):
+def get_sensor_inputs(ind, population, step):
     sensors = [(ind.x - 50) / 50.0, (ind.y - 50) / 50.0]
     def calculate_closest_distance_and_dx():
         closest_distance = 1.0
@@ -19,6 +19,9 @@ def get_sensor_inputs(ind, population):
         return closest_distance, closest_dx
     closest_distance, closest_dx = calculate_closest_distance_and_dx()
     sensors.extend([1.0 - closest_distance, closest_dx])
+    sensors.extend([ind.last_dx, ind.last_dy])
+    sensors.extend([step])
+    if False: print(sensors)
     return sensors
 
 def main():
@@ -39,19 +42,20 @@ def main():
                 if event.key == pygame.K_v:
                     visual_mode = not visual_mode
         if visual_mode:
-            sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population))
+            sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population, sim.current_step))
             screen.fill((255, 255, 255))
             for ind in sim.population:
                 pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 8)), 5)
             pygame.display.flip()
             clock.tick(SPEED)
         else:
-            sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population))
-            if sim.current_step == GENERATION_STEPS-1: #Just finished a generation, display one frame to see the result
-                screen.fill((255, 255, 255))
-                for ind in sim.population:
-                    pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 6)), 5)
-                pygame.display.flip()
+            sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population, sim.current_step))
+            if True:
+                if sim.current_step == GENERATION_STEPS-1:
+                    screen.fill((255, 255, 255))
+                    for ind in sim.population:
+                        pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 8)), 5)
+                    pygame.display.flip()
     pygame.quit()
 
 if __name__ == "__main__":

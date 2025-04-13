@@ -1,11 +1,10 @@
 SENSOR = 0
 NEURON = 1
 ACTION = 2
-NUM_SENSES = 4 #Needs to match implemented sensor_inputs
+NUM_SENSES = 7 #Needs to match sensor_inputs in `run`
+NUM_ACTIONS = 2 #Should match action steps in `simulation`
 log_file = 'log.txt'
-DEBUG = False
 VISUAL_MODE = True
-NUM_ACTIONS = 30
 MAX_NEURONS = 80
 GENOME_LENGTH = 200
 POPULATION_SIZE = 25
