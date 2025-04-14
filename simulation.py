@@ -1,6 +1,6 @@
 import random
+import settings
 from individual import Individual
-from settings import POPULATION_SIZE
 
 class Simulation:
     def __init__(self):
@@ -12,8 +12,8 @@ class Simulation:
 
     def init_population(self):
         self.population = []
-        for _ in range(POPULATION_SIZE):
-            ind = Individual(x=random.randint(10, 90), y=random.randint(10, 90))
+        for _ in range(settings.POPULATION_SIZE):
+            ind = Individual(x=random.randint(5, 95), y=random.randint(5, 95))
             self.population.append(ind)
 
     def step(self, get_sensor_inputs=None):
@@ -33,15 +33,15 @@ class Simulation:
         self.current_step += 1
         if self.current_step >= generation_steps:
             survivors = self.get_survivors()
-            self.survival_rate = len(survivors) / POPULATION_SIZE
+            self.survival_rate = len(survivors) / settings.POPULATION_SIZE
             print(f"Generation {self.generation} survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
             if not survivors:
                 survivors = self.population[:]
-                print("No survivors")
+                #print("No survivors")
             new_population = []
-            while len(new_population) < POPULATION_SIZE:
+            while len(new_population) < settings.POPULATION_SIZE:
                 parent = random.choice(survivors)
-                child = Individual(x=random.randint(10, 90), y=random.randint(10, 90), genome=parent.genome)
+                child = Individual(x=random.randint(5, 95), y=random.randint(5, 95), genome=parent.genome)
                 new_population.append(child)
             self.population = new_population
             self.generation += 1
@@ -51,7 +51,14 @@ class Simulation:
         def meets_criteria(ind):
             #return ind.x > 80
             #return 80 < ind.x < 98
-            return 40 < ind.x < 60 and 40 < ind.y < 60
-        survivors = [ind for ind in self.population if meets_criteria(ind)]
-        return survivors
+            if self.training_stage == 0:
+                return 32 < ind.x < 68 and 32 < ind.y < 68
+            elif self.training_stage == 1:
+                return 36 < ind.x < 64 and 36 < ind.y < 64
+            elif self.training_stage == 2:
+                return 40 < ind.x < 60 and 40 < ind.y < 60
+        if self.survival_rate > 0.9 and self.training_stage < 3:
+            self.training_stage += 1
+            print(f"Set training stage to {self.training_stage}")
+        return [ind for ind in self.population if meets_criteria(ind)]
 

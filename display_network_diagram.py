@@ -4,7 +4,7 @@ import random
 import math
 import ast
 from itertools import combinations
-from settings import SENSOR, NEURON, ACTION
+import settings
 
 class GraphApp:
     def __init__(self, conn_list, canvas_width=1200, canvas_height=1000):
@@ -25,7 +25,7 @@ class GraphApp:
                 self.edges.append(edge)
                 added_edges.add(edge)
             self.weights[edge] = weight
-        self.type_colors = {SENSOR: "#fdd835", NEURON: "#64b5f6", ACTION: "#ef5350"}
+        self.type_colors = {settings.SENSOR: "#fdd835", settings.NEURON: "#64b5f6", settings.ACTION: "#ef5350"}
         self.node_radius = 14
         self.setup_ui()
 
@@ -50,7 +50,7 @@ class GraphApp:
         self.root.mainloop()
 
     def compute_clusters(self):
-        neuron_nodes = {node for node in self.nodes if node[0] == NEURON}
+        neuron_nodes = {node for node in self.nodes if node[0] == settings.NEURON}
         graph = {node: set() for node in neuron_nodes}
         for edge in self.edges:
             src, tgt = edge
@@ -71,9 +71,9 @@ class GraphApp:
                         stack.extend(graph[n] - visited)
                 for edge in self.edges:
                     src, tgt = edge
-                    if src in comp and tgt[0] in (SENSOR, ACTION):
+                    if src in comp and tgt[0] in (settings.SENSOR, settings.ACTION):
                         comp.add(tgt)
-                    elif tgt in comp and src[0] in (SENSOR, ACTION):
+                    elif tgt in comp and src[0] in (settings.SENSOR, settings.ACTION):
                         comp.add(src)
                 #Remove neurons that don’t eventually lead to an action.
                 comp = prune_unused_neurons(comp, self.edges)
@@ -82,7 +82,7 @@ class GraphApp:
 
     def cluster_has_sensor_and_action(self, cluster):
         node_types = {node[0] for node in cluster}
-        return SENSOR in node_types and ACTION in node_types
+        return settings.SENSOR in node_types and settings.ACTION in node_types
 
     def draw_cluster(self, cluster, canvas):
         cluster_edges = [edge for edge in self.edges if edge[0] in cluster and edge[1] in cluster]
@@ -180,8 +180,8 @@ class GraphApp:
 
 def layout_graph(nodes, edges, width, height, iterations=50):
     margin = 50
-    lane_x = {SENSOR: margin, ACTION: width - margin}
-    lanes = {SENSOR: [], NEURON: [], ACTION: []}
+    lane_x = {settings.SENSOR: margin, settings.ACTION: width - margin}
+    lanes = {settings.SENSOR: [], settings.NEURON: [], settings.ACTION: []}
     for node in nodes:
         lanes[node[0]].append(node)
     for lane in lanes:
@@ -207,7 +207,7 @@ def layout_graph(nodes, edges, width, height, iterations=50):
             for idx, node in enumerate(lanes[lane]):
                 order[node] = idx
     positions = {}
-    for lane in (SENSOR, ACTION):
+    for lane in (settings.SENSOR, settings.ACTION):
         lane_nodes = lanes[lane]
         count = len(lane_nodes)
         spacing = (height - 2 * margin) / (count - 1) if count > 1 else 0
@@ -217,12 +217,12 @@ def layout_graph(nodes, edges, width, height, iterations=50):
             x = lane_x[lane] + x_jitter
             y = margin + i * spacing + y_jitter
             positions[node] = [x, y]
-    neurons = lanes[NEURON]
+    neurons = lanes[settings.NEURON]
     if neurons:
         layer = {n: 0 for n in neurons}
         for edge in edges:
             src, tgt = edge
-            if tgt in neurons and src[0] == SENSOR:
+            if tgt in neurons and src[0] == settings.SENSOR:
                 layer[tgt] = max(layer[tgt], 1)
         changed = True
         while changed:
@@ -257,12 +257,12 @@ def prune_unused_neurons(cluster, edges):
     outgoing = {}
     for edge in edges:
         src, tgt = edge
-        if src in cluster and src[0] == NEURON and tgt in cluster and (tgt[0] in (NEURON, ACTION)):
+        if src in cluster and src[0] == settings.NEURON and tgt in cluster and (tgt[0] in (settings.NEURON, settings.ACTION)):
             outgoing.setdefault(src, []).append(tgt)
     valid = set()
     for src, targets in outgoing.items():
         for t in targets:
-            if t[0] == ACTION:
+            if t[0] == settings.ACTION:
                 valid.add(src)
                 break
     changed = True
@@ -272,13 +272,13 @@ def prune_unused_neurons(cluster, edges):
             if src in valid:
                 continue
             for t in targets:
-                if t in valid or (t[0] == ACTION):
+                if t in valid or (t[0] == settings.ACTION):
                     valid.add(src)
                     changed = True
                     break
     pruned = set()
     for node in cluster:
-        if node[0] == NEURON:
+        if node[0] == settings.NEURON:
             if node in valid:
                 pruned.add(node)
         else:
@@ -297,15 +297,6 @@ def read_connections_from_file(filename):
     return neuron_connections + action_connections
 
 def main():
-    test_connections = [
-        (SENSOR, 0, NEURON, 0, 0.5),
-        (SENSOR, 0, NEURON, 1, 0.5),
-        (SENSOR, 2, NEURON, 0, 0.91),
-        (SENSOR, 2, ACTION, 0, 0.19),
-        (NEURON, 0, ACTION, 1, 0.36),
-        (NEURON, 1, ACTION, 1, -0.18),
-        (SENSOR, 1, ACTION, 1, -0.69)]
-    if False: GraphApp(test_connections)
     connections_from_file = read_connections_from_file("connections.txt")
     GraphApp(connections_from_file)
 

@@ -1,6 +1,6 @@
 import pygame
 import math
-from settings import log_file, SPEED, GENERATION_STEPS, VISUAL_MODE
+import settings
 from simulation import Simulation
 
 def get_sensor_inputs(ind, population, step):
@@ -8,9 +8,9 @@ def get_sensor_inputs(ind, population, step):
         (ind.x - 50) / 50.0, #Position, 1-2
         (ind.y - 50) / 50.0]
     sensors.extend([
-        ind.last_dx, #Last movement, 2-3
+        ind.last_dx, #Last movement, 3-4
         ind.last_dy,
-        step/GENERATION_STEPS]) #Step count, 4
+        step/settings.GENERATION_STEPS]) #Step count, 5
     #Nearest neighbor detection
     closest_distance = 1.0
     angle_normalized = 0.0
@@ -26,21 +26,22 @@ def get_sensor_inputs(ind, population, step):
                     angle = math.atan2(dy, dx) #Returns radians
                     angle_normalized = angle / math.pi #Normalized to [-1, 1]
     sensors.extend([
-        1.0 - closest_distance, #Distance to nearest neighbor (0=far, 1=touching)
-        angle_normalized]) #Direction to nearest neighbor as normalized radians
+        1.0 - closest_distance, #Distance to nearest neighbor (0=far, 1=touching), 6
+        angle_normalized]) #Direction to nearest neighbor as normalized radians, 7
     if False: print(sensors)
     return sensors
 
 def main():
-    with open(log_file, "w"):
-        pass
+    if settings.WRITE_GENOME:
+        with open(settings.log_file, "w"):
+            pass
     pygame.init()
     screen = pygame.display.set_mode((800, 800))
     clock = pygame.time.Clock()
     sim = Simulation()
     running = True
-    generation_steps = GENERATION_STEPS
-    visual_mode = VISUAL_MODE
+    generation_steps = settings.GENERATION_STEPS
+    visual_mode = settings.VISUAL_MODE
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -54,11 +55,11 @@ def main():
             for ind in sim.population:
                 pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 8)), 5)
             pygame.display.flip()
-            clock.tick(SPEED)
+            clock.tick(settings.SPEED)
         else:
             sim.update(generation_steps, sensor_callback=lambda ind: get_sensor_inputs(ind, sim.population, sim.current_step))
             if True:
-                if sim.current_step == GENERATION_STEPS-1:
+                if sim.current_step == settings.GENERATION_STEPS-1:
                     screen.fill((255, 255, 255))
                     for ind in sim.population:
                         pygame.draw.circle(screen, (0, 0, 0), (int(ind.x * 8), int(ind.y * 8)), 5)
