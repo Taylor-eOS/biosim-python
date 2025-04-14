@@ -13,7 +13,7 @@ class Simulation:
     def init_population(self):
         self.population = []
         for _ in range(POPULATION_SIZE):
-            ind = Individual(x=random.randint(20, 80), y=random.randint(20, 80))
+            ind = Individual(x=random.randint(10, 90), y=random.randint(10, 90))
             self.population.append(ind)
 
     def step(self, get_sensor_inputs=None):
@@ -41,7 +41,7 @@ class Simulation:
             new_population = []
             while len(new_population) < POPULATION_SIZE:
                 parent = random.choice(survivors)
-                child = Individual(x=random.randint(20, 80), y=random.randint(20, 80), genome=parent.genome)
+                child = Individual(x=random.randint(10, 90), y=random.randint(10, 90), genome=parent.genome)
                 new_population.append(child)
             self.population = new_population
             self.generation += 1
@@ -50,8 +50,8 @@ class Simulation:
     def get_survivors(self):
         def meets_criteria(ind):
             #return ind.x > 80
-            return 80 < ind.x < 98
-            #return 40 < ind.x < 60 and 40 < ind.y < 60
+            #return 80 < ind.x < 98
+            return 40 < ind.x < 60 and 40 < ind.y < 60
         survivors = [ind for ind in self.population if meets_criteria(ind)]
         return survivors
 

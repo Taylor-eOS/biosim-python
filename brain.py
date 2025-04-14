@@ -30,11 +30,11 @@ class Brain:
         action_connections = self.genome[self.genome['sinkType'] == ACTION]
         self.sensor_action = action_connections[action_connections['sourceType'] == SENSOR]
         self.neuron_action = action_connections[action_connections['sourceType'] == NEURON]
-        if True:
-            print("Neuron connections (sensor->neuron):", self.sensor_neuron.tolist())
-            print("Neuron connections (neuron->neuron):", self.neuron_neuron.tolist())
-            print("Action connections (sensor->action):", self.sensor_action.tolist())
-            print("Action connections (neuron->action):", self.neuron_action.tolist())
+        if False:
+            neuron_connections = np.concatenate((self.sensor_neuron, self.neuron_neuron)).tolist()
+            action_connections = self.neuron_action.tolist()
+            print("Neuron connections:", neuron_connections)
+            print("Action connections:", action_connections)
         
     def activate(self, sensor_inputs, iterations=2):
         sensor_inputs = np.array(sensor_inputs, dtype=np.float32)

@@ -12,9 +12,11 @@ gene_dtype = np.dtype([
 def make_random_genome():
     length = GENOME_LENGTH
     genome = np.empty(length, dtype=gene_dtype)
-    genome['sourceType'] = np.random.randint(0, 2, size=length, dtype=np.uint8)  # 0 = SENSOR, 1 = NEURON
+    genome['sourceType'] = np.random.randint(0, 2, size=length, dtype=np.uint8)
     rand_vals = np.random.randint(0, 2, size=length, dtype=np.uint8)
     genome['sinkType'] = np.where(rand_vals == 0, NEURON, ACTION)
+    sensor_source_mask = (genome['sourceType'] == SENSOR)
+    genome['sinkType'][sensor_source_mask] = NEURON
     genome['sourceNum'] = np.random.randint(0, 0x8000, size=length, dtype=np.uint16)
     genome['sinkNum'] = np.random.randint(0, 0x8000, size=length, dtype=np.uint16)
     sensor_mask = (genome['sourceType'] == SENSOR)
