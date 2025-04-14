@@ -30,7 +30,7 @@ class Brain:
         action_connections = self.genome[self.genome['sinkType'] == ACTION]
         self.sensor_action = action_connections[action_connections['sourceType'] == SENSOR]
         self.neuron_action = action_connections[action_connections['sourceType'] == NEURON]
-        if False:
+        if True:
             print("Neuron connections (sensor->neuron):", self.sensor_neuron.tolist())
             print("Neuron connections (neuron->neuron):", self.neuron_neuron.tolist())
             print("Action connections (sensor->action):", self.sensor_action.tolist())

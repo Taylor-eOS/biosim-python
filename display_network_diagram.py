@@ -148,7 +148,7 @@ def count_crossings(edges, positions):
 
 def layout_graph(nodes, edges, width, height, iterations=50):
     margin = 50
-    lane_x = {SENSOR: margin, NEURON: width // 2, ACTION: width - margin}
+    lane_x = {SENSOR: margin, ACTION: width - margin}
     lanes = {SENSOR: [], NEURON: [], ACTION: []}
     for node in nodes:
         lanes[node[0]].append(node)
@@ -178,12 +178,17 @@ def layout_graph(nodes, edges, width, height, iterations=50):
     for lane in lanes:
         lane_nodes = lanes[lane]
         count = len(lane_nodes)
-        spacing = (height - 2*margin)/(count - 1) if count > 1 else 0
+        spacing = (height - 2 * margin) / (count - 1) if count > 1 else 0
         for i, node in enumerate(lane_nodes):
-            x_jitter = random.uniform(-50, 50)
-            y_jitter = random.uniform(-10, 10)
-            x = lane_x[lane] + x_jitter
-            y = margin + i * spacing + y_jitter
+            if lane == NEURON:
+                # Spread neurons freely in the middle, ignoring iteration order for x/y
+                x = random.uniform(0.15 * width, 0.85 * width)
+                y = random.uniform(margin, height - margin)
+            else:
+                x_jitter = random.uniform(-50, 50)
+                y_jitter = random.uniform(-10, 10)
+                x = lane_x[lane] + x_jitter
+                y = margin + i * spacing + y_jitter
             positions[node] = [x, y]
     return positions, 0
 

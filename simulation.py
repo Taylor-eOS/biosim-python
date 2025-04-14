@@ -48,19 +48,6 @@ class Simulation:
             self.current_step = 0
 
     def get_survivors(self):
-        """if self.training_stage == 0:
-            survivors = [ind for ind in self.population if ind.x > 50]
-        elif self.training_stage == 1:
-            survivors = [ind for ind in self.population if ind.x > 70]
-        elif self.training_stage == 2:
-            survivors = [ind for ind in self.population if ind.x > 85]
-        else:
-            survivors = [ind for ind in self.population if 85 < ind.x < 98]
-        print(f"Training stage {self.training_stage}")
-        if self.survival_rate > 0.92 and self.training_stage < 3:
-            self.training_stage += 1
-            print(f"Set training stage to {self.training_stage}")"""
-        #survivors = [ind for ind in self.population if ind.x > 85]
         def meets_criteria(ind):
             #return ind.x > 80
             return 80 < ind.x < 98
