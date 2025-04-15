@@ -29,16 +29,6 @@ class Brain:
         action_connections = self.genome[self.genome['sinkType'] == settings.ACTION]
         self.sensor_action = action_connections[action_connections['sourceType'] == settings.SENSOR]
         self.neuron_action = action_connections[action_connections['sourceType'] == settings.NEURON]
-        if settings.PRINT_GENOME or settings.WRITE_GENOME:
-            neuron_connections = np.concatenate((self.sensor_neuron, self.neuron_neuron)).tolist()
-            action_connections = self.neuron_action.tolist()
-        if settings.PRINT_GENOME:
-            print("Neuron connections:", neuron_connections)
-            print("Action connections:", action_connections)
-        if settings.WRITE_GENOME:
-            with open(settings.log_file, "w") as f:
-                f.write("Neuron connections: " + str(neuron_connections) + "\n")
-                f.write("Action connections: " + str(action_connections) + "\n\n")
 
     def activate(self, sensor_inputs, iterations=2):
         sensor_inputs = np.array(sensor_inputs, dtype=np.float32)

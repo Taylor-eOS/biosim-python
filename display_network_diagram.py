@@ -287,14 +287,12 @@ def prune_unused_neurons(cluster, edges):
 
 def read_connections_from_file(filename):
     with open(filename, 'r') as file:
-        content = file.read()
-    neuron_start = content.find("Neuron connections: ") + len("Neuron connections: ")
-    neuron_end = content.find("]", neuron_start) + 1
-    neuron_connections = ast.literal_eval(content[neuron_start:neuron_end])
-    action_start = content.find("Action connections: ") + len("Action connections: ")
-    action_end = content.find("]", action_start) + 1
-    action_connections = ast.literal_eval(content[action_start:action_end])
-    return neuron_connections + action_connections
+        for line in file:
+            if line.startswith("Example Genome for Generation"):
+                genome_start = line.find(":") + 1
+                genome = ast.literal_eval(line[genome_start:].strip())
+                return genome
+    return []
 
 def main():
     connections_from_file = read_connections_from_file("connections.txt")

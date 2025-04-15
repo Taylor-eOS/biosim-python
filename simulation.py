@@ -38,9 +38,18 @@ class Simulation:
             survivors = self.get_survivors()
             self.survival_rate = len(survivors) / settings.POPULATION_SIZE
             print(f"Generation {self.generation} survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
+            if settings.PRINT_GENOME or settings.WRITE_GENOME:
+                example = survivors[0] if survivors else self.population[0]
+                example_genome = example.genome.tolist()
+                if settings.PRINT_GENOME:
+                    print(f"Example Genome for Generation {self.generation}:", example_genome)
+                if settings.WRITE_GENOME:
+                    with open(settings.log_file, "a") as f:
+                        f.write("Example Genome for Generation " + str(self.generation) + ": " +
+                                str(example_genome) + "\n")
             if not survivors:
                 survivors = self.population[:]
-                #print("No survivors")
+                if False: print("No survivors")
             new_population = []
             new_population = []
             while len(new_population) < settings.POPULATION_SIZE:
