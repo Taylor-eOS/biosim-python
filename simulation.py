@@ -23,13 +23,12 @@ class Simulation:
             actions = ind.update(sensor_inputs)
             dx = 1 if actions[0] > 0.5 else -1 if actions[0] < -0.5 else 0
             dy = 1 if actions[1] > 0.5 else -1 if actions[1] < -0.5 else 0
-            if actions[2] > 0.8:
+            if len(actions) > 2 and actions[2] > 0.8:  # Added safety check
                 dx, dy = 0, 0
             ind.x = max(1, min(99, ind.x + dx))
             ind.y = max(1, min(99, ind.y + dy))
             ind.last_dx = dx
             ind.last_dy = dy
-            if False: print(f"Individual at ({ind.x:.1f}, {ind.y:.1f}) moved by: ({dx}, {dy})")
 
     def update(self, generation_steps, sensor_callback=None):
         self.step(get_sensor_inputs=sensor_callback)
@@ -40,22 +39,23 @@ class Simulation:
             print(f"Generation {self.generation} survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
             if settings.PRINT_GENOME or settings.WRITE_GENOME:
                 example = survivors[0] if survivors else self.population[0]
-                example_genome = example.genome.tolist()
+                example_genome = example.genome
                 if settings.PRINT_GENOME:
                     print(f"Example Genome for Generation {self.generation}:", example_genome)
                 if settings.WRITE_GENOME:
                     with open(settings.log_file, "a") as f:
-                        f.write("Example Genome for Generation " + str(self.generation) + ": " +
-                                str(example_genome) + "\n")
+                        f.write(f"Example Genome for Generation {self.generation}: {example_genome}\n")
             if not survivors:
                 survivors = self.population[:]
                 if False: print("No survivors")
             new_population = []
-            new_population = []
             while len(new_population) < settings.POPULATION_SIZE:
                 parent = random.choice(survivors)
                 child_genome = reproduce_genome(parent.genome)
-                child = Individual(x=random.randint(5, 95), y=random.randint(5, 95), genome=child_genome)
+                child = Individual(
+                    x=random.randint(5, 95),
+                    y=random.randint(5, 95),
+                    genome=child_genome)
                 new_population.append(child)
             self.population = new_population
             self.generation += 1

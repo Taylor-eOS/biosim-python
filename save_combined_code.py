@@ -1,4 +1,4 @@
-filenames = ['run.py', 'simulation.py', 'individual.py', 'brain.py', 'genome.py']
+filenames = ['genome.py', 'brain.py', 'individual.py', 'simulation.py', 'run.py']
 output_file = 'combined_code.txt'
 
 with open(output_file, 'w') as outfile:

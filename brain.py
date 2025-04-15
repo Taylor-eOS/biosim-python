@@ -1,4 +1,3 @@
-import numpy as np
 import math
 import settings
 
@@ -7,76 +6,65 @@ class Brain:
         self.genome = self.cull_unused_neurons(genome) if cull else genome
         self.remap_neurons()
         self.build_wiring()
-        self.neurons = np.zeros(self.num_neurons, dtype=np.float32)
+        self.neurons = [0.0] * self.num_neurons
 
     def remap_neurons(self):
-        src_mask = self.genome['sourceType'] == settings.NEURON
-        sink_mask = self.genome['sinkType'] == settings.NEURON
-        src_neurons = self.genome['sourceNum'][src_mask]
-        sink_neurons = self.genome['sinkNum'][sink_mask]
-        all_neurons = np.unique(np.concatenate((src_neurons, sink_neurons)).astype(np.int64))
+        src_neurons = [g[1] for g in self.genome if g[0] == settings.NEURON]
+        sink_neurons = [g[3] for g in self.genome if g[2] == settings.NEURON]
+        all_neurons = sorted(set(src_neurons + sink_neurons))
         self.num_neurons = len(all_neurons)
-        remap_dict = {old_id: new_id for new_id, old_id in enumerate(all_neurons)}
-        src_vals = self.genome['sourceNum'][src_mask]
-        if src_vals.size > 0:
-            self.genome['sourceNum'][src_mask] = np.vectorize(remap_dict.get)(src_vals)
-        self.genome['sinkNum'][sink_mask] = np.vectorize(remap_dict.get)(self.genome['sinkNum'][sink_mask])
+        remap_dict = {old: new for new, old in enumerate(all_neurons)}
+        for gene in self.genome:
+            if gene[0] == settings.NEURON:
+                gene[1] = remap_dict[gene[1]]
+            if gene[2] == settings.NEURON:
+                gene[3] = remap_dict[gene[3]]
 
     def build_wiring(self):
-        neuron_connections = self.genome[self.genome['sinkType'] == settings.NEURON]
-        self.sensor_neuron = neuron_connections[neuron_connections['sourceType'] == settings.SENSOR]
-        self.neuron_neuron = neuron_connections[neuron_connections['sourceType'] == settings.NEURON]
-        action_connections = self.genome[self.genome['sinkType'] == settings.ACTION]
-        self.sensor_action = action_connections[action_connections['sourceType'] == settings.SENSOR]
-        self.neuron_action = action_connections[action_connections['sourceType'] == settings.NEURON]
+        self.sensor_neuron = [g for g in self.genome if g[2] == settings.NEURON and g[0] == settings.SENSOR]
+        self.neuron_neuron = [g for g in self.genome if g[2] == settings.NEURON and g[0] == settings.NEURON]
+        self.sensor_action = [g for g in self.genome if g[2] == settings.ACTION and g[0] == settings.SENSOR]
+        self.neuron_action = [g for g in self.genome if g[2] == settings.ACTION and g[0] == settings.NEURON]
 
     def activate(self, sensor_inputs, iterations=2):
-        sensor_inputs = np.array(sensor_inputs, dtype=np.float32)
+        sensor_inputs = list(sensor_inputs)
         for _ in range(iterations):
-            new_neurons = np.zeros(self.num_neurons, dtype=np.float32)
-            if self.sensor_neuron.size:
-                src_vals = sensor_inputs[self.sensor_neuron['sourceNum']]
-                np.add.at(new_neurons, self.sensor_neuron['sinkNum'],
-                          self.sensor_neuron['weight'] * src_vals)
-            if self.neuron_neuron.size:
-                src_vals = self.neurons[self.neuron_neuron['sourceNum']]
-                np.add.at(new_neurons, self.neuron_neuron['sinkNum'],
-                          self.neuron_neuron['weight'] * src_vals)
-            self.neurons = np.tanh(new_neurons)
-            if False: print("Neuron outputs:", ["{:.3f}".format(x) for x in np.round(self.neurons, 3)])
-        actions = np.zeros(settings.NUM_ACTIONS, dtype=np.float32)
-        if self.sensor_action.size:
-            src_vals = sensor_inputs[self.sensor_action['sourceNum']]
-            np.add.at(actions, self.sensor_action['sinkNum'],
-                      self.sensor_action['weight'] * src_vals)
-        if self.neuron_action.size:
-            src_vals = self.neurons[self.neuron_action['sourceNum']]
-            np.add.at(actions, self.neuron_action['sinkNum'],
-                      self.neuron_action['weight'] * src_vals)
-        actions = np.tanh(actions)
-        if False: print("Action outputs:", ["{:.3f}".format(x) for x in np.round(actions, 3)])
-        return actions
+            new_neurons = [0.0] * self.num_neurons
+            for conn in self.sensor_neuron:
+                val = sensor_inputs[conn[1]] * conn[4]
+                new_neurons[conn[3]] += val
+            for conn in self.neuron_neuron:
+                val = self.neurons[conn[1]] * conn[4]
+                new_neurons[conn[3]] += val
+            self.neurons = [math.tanh(x) for x in new_neurons]
+        actions = [0.0] * settings.NUM_ACTIONS
+        for conn in self.sensor_action:
+            val = sensor_inputs[conn[1]] * conn[4]
+            actions[conn[3]] += val
+        for conn in self.neuron_action:
+            val = self.neurons[conn[1]] * conn[4]
+            actions[conn[3]] += val
+        return [math.tanh(x) for x in actions]
 
     def cull_unused_neurons(self, genome):
         driven = set()
         for row in genome:
-            if row['sinkType'] == settings.NEURON and row['sourceType'] in (settings.SENSOR, settings.NEURON) and row['sourceNum'] != row['sinkNum']:
-                driven.add(int(row['sinkNum']))
+            if row[2] == settings.NEURON and row[0] in (settings.SENSOR, settings.NEURON) and row[1] != row[3]:
+                driven.add(row[3])
         changed = True
         while changed:
             changed = False
             for row in genome:
-                if row['sinkType'] == settings.NEURON and row['sourceType'] == settings.NEURON:
-                    if int(row['sourceNum']) in driven and int(row['sinkNum']) not in driven:
-                        driven.add(int(row['sinkNum']))
-                        changed = True
+                if row[2] == settings.NEURON and row[0] == settings.NEURON and row[1] in driven and row[3] not in driven:
+                    driven.add(row[3])
+                    changed = True
         valid = []
         for row in genome:
-            if row['sinkType'] == settings.ACTION:
-                if row['sourceType'] == settings.SENSOR or int(row['sourceNum']) in driven:
+            if row[2] == settings.ACTION:
+                if row[0] == settings.SENSOR or row[1] in driven:
                     valid.append(row)
-            elif row['sinkType'] == settings.NEURON:
-                if int(row['sinkNum']) in driven and (row['sourceType'] == settings.SENSOR or int(row['sourceNum']) in driven):
+            elif row[2] == settings.NEURON:
+                if row[3] in driven and (row[0] == settings.SENSOR or row[1] in driven):
                     valid.append(row)
-        return np.array(valid, dtype=genome.dtype)
+        return valid
 
