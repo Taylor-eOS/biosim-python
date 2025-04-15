@@ -10,18 +10,17 @@ class Brain:
         self.neurons = np.zeros(self.num_neurons, dtype=np.float32)
 
     def remap_neurons(self):
-        src_neurons = self.genome['sourceNum'][self.genome['sourceType'] == settings.NEURON]
-        sink_neurons = self.genome['sinkNum'][self.genome['sinkType'] == settings.NEURON]
-        all_neurons = np.union1d(src_neurons, sink_neurons)
-        sorted_neurons = np.sort(all_neurons)
-        self.num_neurons = len(sorted_neurons)
-        mapping = np.full(settings.MAX_NEURONS, -1, dtype=np.int16)
-        for new_id, old_id in enumerate(sorted_neurons):
-            mapping[old_id] = new_id
-        neuron_src = (self.genome['sourceType'] == settings.NEURON)
-        self.genome['sourceNum'][neuron_src] = mapping[self.genome['sourceNum'][neuron_src]]
-        neuron_sink = (self.genome['sinkType'] == settings.NEURON)
-        self.genome['sinkNum'][neuron_sink] = mapping[self.genome['sinkNum'][neuron_sink]]
+        src_mask = self.genome['sourceType'] == settings.NEURON
+        sink_mask = self.genome['sinkType'] == settings.NEURON
+        src_neurons = self.genome['sourceNum'][src_mask]
+        sink_neurons = self.genome['sinkNum'][sink_mask]
+        all_neurons = np.unique(np.concatenate((src_neurons, sink_neurons)).astype(np.int64))
+        self.num_neurons = len(all_neurons)
+        remap_dict = {old_id: new_id for new_id, old_id in enumerate(all_neurons)}
+        src_vals = self.genome['sourceNum'][src_mask]
+        if src_vals.size > 0:
+            self.genome['sourceNum'][src_mask] = np.vectorize(remap_dict.get)(src_vals)
+        self.genome['sinkNum'][sink_mask] = np.vectorize(remap_dict.get)(self.genome['sinkNum'][sink_mask])
 
     def build_wiring(self):
         neuron_connections = self.genome[self.genome['sinkType'] == settings.NEURON]
@@ -37,7 +36,7 @@ class Brain:
             print("Neuron connections:", neuron_connections)
             print("Action connections:", action_connections)
         if settings.WRITE_GENOME:
-            with open(settings.log_file, "a") as f:
+            with open(settings.log_file, "w") as f:
                 f.write("Neuron connections: " + str(neuron_connections) + "\n")
                 f.write("Action connections: " + str(action_connections) + "\n\n")
 
