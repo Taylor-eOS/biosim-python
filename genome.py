@@ -3,22 +3,16 @@ import settings
 
 def make_random_genome():
     genome = []
+    P_SENSOR = 0.3
+    P_NEURON_SINK = 0.7
     for _ in range(settings.GENOME_LENGTH):
-        source_type = random.randint(0, 1)
-        rand_val = random.randint(0, 1)
-        sink_type = settings.NEURON if rand_val == 0 else settings.ACTION
+        source_type = random.choices([settings.SENSOR, settings.NEURON], [P_SENSOR, 1 - P_SENSOR])[0]
         if source_type == settings.SENSOR:
             sink_type = settings.NEURON
-        source_num = random.randint(0, 0x7FFF)
-        sink_num = random.randint(0, 0x7FFF)
-        if source_type == settings.SENSOR:
-            source_num %= settings.NUM_SENSES
         else:
-            source_num %= settings.MAX_NEURONS
-        if sink_type == settings.NEURON:
-            sink_num %= settings.MAX_NEURONS
-        else:
-            sink_num %= settings.NUM_ACTIONS
+            sink_type = random.choices([settings.NEURON, settings.ACTION], [P_NEURON_SINK, 1 - P_NEURON_SINK])[0]
+        source_num = (random.randint(0, settings.NUM_SENSES - 1) if source_type == settings.SENSOR else random.randint(0, settings.MAX_NEURONS - 1))
+        sink_num = (random.randint(0, settings.MAX_NEURONS - 1) if sink_type == settings.NEURON else random.randint(0, settings.NUM_ACTIONS - 1))
         weight = random.uniform(-1.0, 1.0)
         genome.append([source_type, source_num, sink_type, sink_num, weight])
     return genome
@@ -28,76 +22,65 @@ def reproduce_genome(parent_genome):
     return mutate_genome(child_genome)
 
 def mutate_genome(genome):
-    used_neurons = set()
-    for gene in genome:
-        if gene[0] == settings.NEURON:
-            used_neurons.add(gene[1])
-        if gene[2] == settings.NEURON:
-            used_neurons.add(gene[3])
-    next_id = max(used_neurons) + 1 if used_neurons else 0
+    #if random.random() > settings.MUTATION_RATE:
+    #    return genome
+    genome = list(genome)
+    used_neurons = {g[1] for g in genome if g[0] == settings.NEURON}
+    used_neurons |= {g[3] for g in genome if g[2] == settings.NEURON}
+    next_id = max(used_neurons, default=-1) + 1
     def new_neuron_id():
         nonlocal next_id
         nid = next_id
         next_id += 1
         return nid
-    mutation_types = ['add_connection', 'edit_connection', 'remove_connection']
-    if len(genome) == 0:
-        mutation_types = ['add_connection']
-    chosen = random.choice(mutation_types)
-    if chosen == 'add_connection':
-        if random.random() < 0.5:
-            new_gene = [settings.SENSOR,
-                        random.randint(0, settings.NUM_SENSES - 1),
-                        settings.NEURON,
-                        new_neuron_id(),
-                        random.uniform(-1.0, 1.0)]
-        else:
-            source_num = random.choice(list(used_neurons)) if used_neurons else 0
-            new_gene = [settings.NEURON,
-                        source_num,
-                        settings.ACTION,
-                        random.randint(0, settings.NUM_ACTIONS - 1),
-                        random.uniform(-1.0, 1.0)]
-        genome = list(genome)
-        genome.append(new_gene)
-    elif chosen == 'edit_connection' and len(genome) > 0:
-        idx = random.randint(0, len(genome) - 1)
-        gene = genome[idx]
+    p_edit = settings.MUTATION_RATE
+    p_add = settings.MUTATION_RATE*0.2
+    p_remove = settings.MUTATION_RATE*0.18
+    sensor_add = 0.2
+    if genome and random.random() < p_edit:
+        gene = random.choice(genome)
         field = random.choice(['sourceType', 'sinkType', 'sourceNum', 'sinkNum', 'weight'])
         if field == 'sourceType':
-            new_type = random.randint(0, 1)
-            gene[0] = new_type
-            if new_type == settings.SENSOR:
+            gene[0] = random.randint(0, 1)
+            if gene[0] == settings.SENSOR:
                 gene[1] = random.randint(0, settings.NUM_SENSES - 1)
                 gene[2] = settings.NEURON
                 gene[3] = new_neuron_id()
             else:
                 gene[1] = random.choice(list(used_neurons)) if used_neurons else 0
         elif field == 'sinkType':
-            if gene[0] == settings.SENSOR:
+            if gene[0] == settings.SENSOR or random.random() < 0.5:
                 gene[2] = settings.NEURON
                 gene[3] = new_neuron_id()
             else:
-                if random.random() < 0.5:
-                    gene[2] = settings.ACTION
-                    gene[3] = random.randint(0, settings.NUM_ACTIONS - 1)
-                else:
-                    gene[2] = settings.NEURON
-                    gene[3] = new_neuron_id()
-        elif field == 'sourceNum':
-            if gene[0] == settings.SENSOR:
-                gene[1] = random.randint(0, settings.NUM_SENSES - 1)
-            else:
-                gene[1] = random.choice(list(used_neurons)) if used_neurons else 0
-        elif field == 'sinkNum':
-            if gene[2] == settings.NEURON:
-                gene[3] = new_neuron_id()
-            else:
+                gene[2] = settings.ACTION
                 gene[3] = random.randint(0, settings.NUM_ACTIONS - 1)
+        elif field == 'sourceNum':
+            gene[1] = (random.randint(0, settings.NUM_SENSES - 1)
+                       if gene[0] == settings.SENSOR
+                       else random.choice(list(used_neurons)) if used_neurons else 0)
+        elif field == 'sinkNum':
+            gene[3] = (new_neuron_id()
+                       if gene[2] == settings.NEURON
+                       else random.randint(0, settings.NUM_ACTIONS - 1))
         elif field == 'weight':
             gene[4] = random.uniform(-1.0, 1.0)
-    elif chosen == 'remove_connection' and len(genome) > 0:
-        idx = random.randint(0, len(genome) - 1)
-        genome = [g for i, g in enumerate(genome) if i != idx]
+    if random.random() < p_add:
+        if random.random() < sensor_add:
+            new_gene = [settings.SENSOR,
+                        random.randint(0, settings.NUM_SENSES - 1),
+                        settings.NEURON,
+                        new_neuron_id(),
+                        random.uniform(-1.0, 1.0)]
+        else:
+            source = random.choice(list(used_neurons)) if used_neurons else 0
+            new_gene = [settings.NEURON,
+                        source,
+                        settings.ACTION,
+                        random.randint(0, settings.NUM_ACTIONS - 1),
+                        random.uniform(-1.0, 1.0)]
+        genome.append(new_gene)
+    if genome and random.random() < p_remove:
+        genome.pop(random.randint(0, len(genome) - 1))
     return genome
 

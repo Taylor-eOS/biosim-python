@@ -288,7 +288,7 @@ def prune_unused_neurons(cluster, edges):
 def read_connections_from_file(filename):
     with open(filename, 'r') as file:
         for line in file:
-            if line.startswith("Example Genome for Generation"):
+            if line.startswith("Example genome for generation"):
                 genome_start = line.find(":") + 1
                 genome = ast.literal_eval(line[genome_start:].strip())
                 return genome
