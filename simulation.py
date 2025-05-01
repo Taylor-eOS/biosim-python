@@ -9,6 +9,7 @@ class Simulation:
         self.current_step = 0
         self.survival_rate = 0
         self.training_stage = 0
+        self.food_position = (random.randint(1, 99), random.randint(1, 99))
         self.init_population()
 
     def init_population(self):
@@ -19,7 +20,22 @@ class Simulation:
 
     def step(self, get_sensor_inputs=None):
         for ind in self.population:
-            sensor_inputs = get_sensor_inputs(ind) if get_sensor_inputs else [ind.x/100, ind.y/100]
+            # Handle both callback and default sensor modes
+            if get_sensor_inputs:
+                # Pass all required parameters explicitly
+                sensor_inputs = get_sensor_inputs(
+                    ind=ind,
+                    population=self.population,
+                    step=self.current_step,
+                    food_position=self.food_position
+                )
+            else:
+                # Default sensor setup
+                sensor_inputs = [
+                    ind.x/100, 
+                    ind.y/100,
+                    (self.food_position[0] - ind.x)/100,
+                    (self.food_position[1] - ind.y)/100]
             actions = ind.update(sensor_inputs)
             dx = 1 if actions[0] > 0.5 else -1 if actions[0] < -0.5 else 0
             dy = 1 if actions[1] > 0.5 else -1 if actions[1] < -0.5 else 0
@@ -58,13 +74,15 @@ class Simulation:
                     genome=child_genome)
                 new_population.append(child)
             self.population = new_population
+            self.food_position = (random.randint(1, 99), random.randint(1, 99))
             self.generation += 1
             self.current_step = 0
 
     def get_survivors(self):
         #return self.filter_population(self.right_side_criteria)
-        return self.filter_population(self.center_x_criteria)
+        #return self.filter_population(self.center_x_criteria)
         #return self.filter_population(self.narrowing_criteria)
+        return self.filter_population(self.food_criteria)
 
     def filter_population(self, criteria):
         return [ind for ind in self.population if criteria(ind)]
@@ -87,4 +105,9 @@ class Simulation:
             return 42 < ind.x < 58 and 30 < ind.y < 70
         else:
             return ind.x > 75
+
+    def food_criteria(self, ind):
+        dx = ind.x - self.food_position[0]
+        dy = ind.y - self.food_position[1]
+        return dx*dx + dy*dy < 600
 
