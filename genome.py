@@ -35,7 +35,7 @@ def mutate_genome(genome):
         return nid
     p_edit = settings.MUTATION_RATE
     p_add = settings.MUTATION_RATE*0.2
-    p_remove = settings.MUTATION_RATE*0.18
+    p_remove = p_add
     sensor_add = 0.2
     if genome and random.random() < p_edit:
         gene = random.choice(genome)
@@ -80,7 +80,7 @@ def mutate_genome(genome):
                         random.randint(0, settings.NUM_ACTIONS - 1),
                         random.uniform(-1.0, 1.0)]
         genome.append(new_gene)
-    if genome and random.random() < p_remove:
+    if genome and random.random() < p_remove and len(genome) < settings.GENOME_LENGTH*2:
         genome.pop(random.randint(0, len(genome) - 1))
     return genome
 

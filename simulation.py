@@ -62,17 +62,29 @@ class Simulation:
             self.current_step = 0
 
     def get_survivors(self):
-        def meets_criteria(ind):
-            #return ind.x > 75
-            return 40 < ind.x < 60
-            #if self.training_stage == 0:
-            #    return 30 < ind.x < 70
-            #elif self.training_stage == 1:
-            #    return 40 < ind.x < 60 and 20 < ind.y < 80
-            #elif self.training_stage == 2:
-            #    return 42 < ind.x < 58 and 30 < ind.y < 70
-        #if self.survival_rate >= 0.95 and self.training_stage <= 2:
-        #    self.training_stage += 1
-        #    print(f"Set training stage to {self.training_stage}")
-        return [ind for ind in self.population if meets_criteria(ind)]
+        #return self.filter_population(self.right_side_criteria)
+        return self.filter_population(self.center_x_criteria)
+        #return self.filter_population(self.narrowing_criteria)
+
+    def filter_population(self, criteria):
+        return [ind for ind in self.population if criteria(ind)]
+
+    def right_side_criteria(self, ind):
+        return ind.x > 80
+
+    def center_x_criteria(self, ind):
+        return 40 < ind.x < 60
+
+    def narrowing_criteria(self, ind):
+        if self.survival_rate >= 0.95 and self.training_stage < 3:
+            self.training_stage += 1
+            print(f"Changed training stage to {self.training_stage}")
+        if self.training_stage == 0:
+            return 30 < ind.x < 70
+        elif self.training_stage == 1:
+            return 40 < ind.x < 60 and 20 < ind.y < 80
+        elif self.training_stage == 2:
+            return 42 < ind.x < 58 and 30 < ind.y < 70
+        else:
+            return ind.x > 75
 
