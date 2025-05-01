@@ -5,17 +5,17 @@ from simulation import Simulation
 
 def get_sensor_inputs(ind, population, step, food_position):
     sensors = [
-        (ind.x - 50)/50.0,  #0: X position
-        (ind.y - 50)/50.0]    #1: Y position
+        (ind.x - 50)/50.0,  #1: X position
+        (ind.y - 50)/50.0]    #2: Y position
     #Food position relative to agent
     sensors.extend([
-        (food_position[0] - ind.x)/100.0,  #2: Food X vector
-        (food_position[1] - ind.y)/100.0])   #3: Food Y vector
+        (food_position[0] - ind.x)/100.0,  #3: Food X vector
+        (food_position[1] - ind.y)/100.0])   #4: Food Y vector
     #Movement and timing
     sensors.extend([
-        ind.last_dx,                     #4: Last X movement
-        ind.last_dy,                     #5: Last Y movement
-        step/settings.GENERATION_STEPS])  #6: Time
+        ind.last_dx,                     #5: Last X movement
+        ind.last_dy,                     #6: Last Y movement
+        step/settings.GENERATION_STEPS])  #7: Time
     #Social sensing
     closest_distance = 1.0
     angle_normalized = 0.0
@@ -34,9 +34,9 @@ def get_sensor_inputs(ind, population, step, food_position):
                     angle = math.atan2(dy, dx)
                     angle_normalized = angle/math.pi
     sensors.extend([
-        1.0 - closest_distance,          #7: Proximity to nearest
-        angle_normalized,                #8: Direction to nearest
-        nearby_count/settings.POPULATION_SIZE])  #9: Crowding
+        1.0 - closest_distance,          #8: Proximity to nearest
+        angle_normalized,                #9: Direction to nearest
+        nearby_count/settings.POPULATION_SIZE])  #10: Crowding
     if settings.WRITE_SENSOR_OUTPUT: 
         print(sensors)
     return sensors

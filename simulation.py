@@ -20,17 +20,13 @@ class Simulation:
 
     def step(self, get_sensor_inputs=None):
         for ind in self.population:
-            # Handle both callback and default sensor modes
             if get_sensor_inputs:
-                # Pass all required parameters explicitly
                 sensor_inputs = get_sensor_inputs(
                     ind=ind,
                     population=self.population,
                     step=self.current_step,
-                    food_position=self.food_position
-                )
+                    food_position=self.food_position)
             else:
-                # Default sensor setup
                 sensor_inputs = [
                     ind.x/100, 
                     ind.y/100,
@@ -39,8 +35,7 @@ class Simulation:
             actions = ind.update(sensor_inputs)
             dx = 1 if actions[0] > 0.5 else -1 if actions[0] < -0.5 else 0
             dy = 1 if actions[1] > 0.5 else -1 if actions[1] < -0.5 else 0
-            if len(actions) > 2 and actions[2] > 0.8:
-                dx, dy = 0, 0
+            #if len(actions) > 2 and actions[2] > 0.8: dx, dy = 0, 0
             ind.x = max(1, min(99, ind.x + dx))
             ind.y = max(1, min(99, ind.y + dy))
             ind.last_dx = dx
@@ -52,7 +47,12 @@ class Simulation:
         if self.current_step >= generation_steps:
             survivors = self.get_survivors()
             self.survival_rate = len(survivors) / settings.POPULATION_SIZE
-            print(f"Generation {self.generation} survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
+            print(f"Generation {self.generation}, stage {self.training_stage}, survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
+            STAGE_THRESHOLDS = [0.9, 0.9, 0.9]  #Survival rates needed for each stage
+            if (self.training_stage < len(STAGE_THRESHOLDS) and 
+                self.survival_rate >= STAGE_THRESHOLDS[self.training_stage]):
+                self.training_stage += 1
+                print(f"Advanced to training stage {self.training_stage}")
             if settings.PRINT_GENOME or settings.WRITE_GENOME:
                 example = survivors[0] if survivors else self.population[0]
                 example_genome = example.genome
@@ -94,20 +94,20 @@ class Simulation:
         return 40 < ind.x < 60
 
     def narrowing_criteria(self, ind):
-        if self.survival_rate >= 0.95 and self.training_stage < 3:
-            self.training_stage += 1
-            print(f"Changed training stage to {self.training_stage}")
-        if self.training_stage == 0:
-            return 30 < ind.x < 70
-        elif self.training_stage == 1:
-            return 40 < ind.x < 60 and 20 < ind.y < 80
-        elif self.training_stage == 2:
-            return 42 < ind.x < 58 and 30 < ind.y < 70
-        else:
-            return ind.x > 75
+        #Stage 0-2 use same thresholds as food_criteria
+        stage_config = [
+            (30, 70, 0, 100),   #Stage 0: Wide X range
+            (40, 60, 20, 80),    #Stage 1: Narrower X, some Y
+            (42, 58, 30, 70)]     #Stage 2: Tight X/Y
+        if self.training_stage >= len(stage_config):
+            return ind.x > 75  #Final stage
+        x_min, x_max, y_min, y_max = stage_config[self.training_stage]
+        return x_min < ind.x < x_max and y_min < ind.y < y_max
 
     def food_criteria(self, ind):
+        thresholds = [850, 600, 450]
+        current_threshold = thresholds[min(self.training_stage, len(thresholds)-1)]
         dx = ind.x - self.food_position[0]
         dy = ind.y - self.food_position[1]
-        return dx*dx + dy*dy < 600
+        return dx*dx + dy*dy < current_threshold
 
