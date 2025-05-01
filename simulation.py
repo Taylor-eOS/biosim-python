@@ -47,36 +47,45 @@ class Simulation:
         if self.current_step >= generation_steps:
             survivors = self.get_survivors()
             self.survival_rate = len(survivors) / settings.POPULATION_SIZE
-            print(f"Generation {self.generation}, stage {self.training_stage}, survivors: {len(survivors)}, {self.survival_rate*100:.0f}%")
-            STAGE_THRESHOLDS = [0.9, 0.9, 0.9]  #Survival rates needed for each stage
-            if (self.training_stage < len(STAGE_THRESHOLDS) and 
-                self.survival_rate >= STAGE_THRESHOLDS[self.training_stage]):
-                self.training_stage += 1
-                print(f"Advanced to training stage {self.training_stage}")
-            if settings.PRINT_GENOME or settings.WRITE_GENOME:
-                example = survivors[0] if survivors else self.population[0]
-                example_genome = example.genome
-                if settings.PRINT_GENOME:
-                    print(f"Example genome for generation {self.generation}:", example_genome)
-                if settings.WRITE_GENOME:
-                    with open(settings.log_file, "w") as f:
-                        f.write(f"Example genome for generation {self.generation}: {example_genome}\n")
-            if not survivors:
-                survivors = self.population[:]
-                if False: print("No survivors")
-            new_population = []
-            while len(new_population) < settings.POPULATION_SIZE:
-                parent = random.choice(survivors)
-                child_genome = reproduce_genome(parent.genome)
-                child = Individual(
-                    x=random.randint(5, 95),
-                    y=random.randint(5, 95),
-                    genome=child_genome)
-                new_population.append(child)
-            self.population = new_population
+            print(f"Generation {self.generation:3d}, stage {self.training_stage:1d}, " 
+                f"survivors: {len(survivors):2d}, {self.survival_rate*100:2.0f}%")
+            self.handle_stage_advancement()
+            self.log_genome_example(survivors)
+            self.repopulate(survivors)
             self.food_position = (random.randint(1, 99), random.randint(1, 99))
             self.generation += 1
             self.current_step = 0
+
+    def handle_stage_advancement(self):
+        STAGE_THRESHOLDS = [0.9, 0.9, 0.9]
+        if (self.training_stage < len(STAGE_THRESHOLDS) and 
+            self.survival_rate >= STAGE_THRESHOLDS[self.training_stage]):
+            self.training_stage += 1
+            print(f"Advanced to training stage {self.training_stage}")
+
+    def log_genome_example(self, survivors):
+        if settings.PRINT_GENOME or settings.WRITE_GENOME:
+            example = survivors[0] if survivors else self.population[0]
+            example_genome = example.genome
+            if settings.PRINT_GENOME:
+                print(f"Example genome for generation {self.generation}:", example_genome)
+            if settings.WRITE_GENOME:
+                with open(settings.log_file, "w") as f:
+                    f.write(f"Example genome for generation {self.generation}: {example_genome}\n")
+
+    def repopulate(self, survivors):
+        if not survivors:
+            survivors = self.population[:]
+        new_population = []
+        while len(new_population) < settings.POPULATION_SIZE:
+            parent = random.choice(survivors)
+            child_genome = reproduce_genome(parent.genome)
+            child = Individual(
+                x=random.randint(5, 95),
+                y=random.randint(5, 95),
+                genome=child_genome)
+            new_population.append(child)
+        self.population = new_population
 
     def get_survivors(self):
         #return self.filter_population(self.right_side_criteria)
